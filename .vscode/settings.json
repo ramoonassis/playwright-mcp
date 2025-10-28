@@ -1,0 +1,28 @@
+{
+    // Desativa a visualização de pastas compactadas (ex: 'src/app' vira 'src' e 'app')
+    "explorer.compactFolders": false,
+
+    // Exclui arquivos do explorador de arquivos (File Explorer)
+    "files.exclude": {
+        "**/.venv": true,
+        "**/.pytest_cache": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true
+    },
+    
+    // Exclui arquivos da pesquisa global (Search - Ctrl+Shift+F)
+    "search.exclude": {
+        "**/.venv": true,
+        "**/.pytest_cache": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true
+    },
+
+    // Exclui arquivos do Go to File (Ctrl+P) e do monitoramento de arquivos
+    "files.watcherExclude": {
+        "**/.venv/**": true,
+        "**/.pytest_cache/**": true,
+        "**/__pycache__/**": true,
+        "**/*.pyc": true
+    }
+}
