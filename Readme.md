@@ -112,7 +112,7 @@ export default defineConfig({
   testDir: './tests',
 
   use: {
-    baseURL: 'https://testbeyond.com',
+    baseURL: 'https://www.kitchenaid.com.br',
     headless: true,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure'
@@ -123,7 +123,7 @@ export default defineConfig({
 ### Variáveis de Ambiente (opcional)
 
 ```env
-BASE_URL=https://testbeyond.com
+BASE_URL=https://www.kitchenaid.com.br
 HEADLESS=true
 ```
 
@@ -135,9 +135,9 @@ HEADLESS=true
 import { test, expect } from '@playwright/test';
 
 test('home @e2e', async ({ page }) => {
-  await page.goto('https://testbeyond.com');
+  await page.goto('https://kitchenaid.com.br');
 
-  await expect(page).toHaveTitle('Projeto TestBeyond');
+  await expect(page).toHaveTitle('Projeto Kitchen Aid');
 });
 ```
 
