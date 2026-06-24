@@ -8,10 +8,10 @@
 
 ### 📦 Massa de Dados: Produto
 
-| Campo              | Valor                                                       |
-| ------------------ | ----------------------------------------------------------- |
-| **Produto**        | Batedeira KitchenAid Artisan Mineral Water - KEA30CQ - 110V |
-| **Valor Esperado** | R$ 2.399,00                                                 |
+| Campo              | Valor                                      |
+| ------------------ | ------------------------------------------ |
+| **Produto**        | Batedeira KitchenAid Artisan Mineral Water |
+| **Valor Esperado** | R$ 2.399,00                                |
 
 ### 🔐 Massa de Dados: Usuário
 
@@ -69,9 +69,10 @@ Validar que o usuário consegue acessar os detalhes do produto encontrado na bus
 | ----- | -------------------------------------- | ------------------------------------------------- |
 | 1     | Realizar a busca pelo produto.         | O produto é exibido nos resultados da busca.      |
 | 2     | Clicar sobre o produto encontrado.     | A página de detalhes do produto é carregada.      |
-| 3     | Validar o nome do produto.             | O nome exibido corresponde ao produto pesquisado. |
-| 4     | Validar o valor do produto.            | O valor apresentado deve ser **R$ 2.399,00**.     |
-| 5     | Validar a presença do botão "Comprar". | O botão está visível e habilitado.                |
+| 3     | Acesse a página única do item          | A página única do item é mostrada                 |
+| 4     | Validar o nome do produto.             | O nome exibido corresponde ao produto pesquisado. |
+| 5     | Validar o valor do produto.            | O valor apresentado deve ser **R$ 2.399,00**.     |
+| 6     | Validar a presença do botão "Comprar". | O botão está visível e habilitado.                |
 
 ---
 
