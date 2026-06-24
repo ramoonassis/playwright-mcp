@@ -16,8 +16,8 @@ Boilerplate completo para automação de testes E2E com Playwright e TypeScript.
 ### Clone o repositório
 
 ```bash
-git clone https://github.com/ramoonassis/playwright-gemini.git
-cd playwright-gemini
+git clone https://github.com/ramoonassis/playwright-mcp.git
+cd playwright-mcp
 ```
 
 ### Instale as dependências
@@ -77,7 +77,7 @@ npx playwright test tests/e2e/landing-page.spec.ts
 ## 📁 Estrutura do Projeto
 
 ```text
-playwright-gemini/
+playwright-mcp/
 ├── tests/
 │   ├── e2e/
 │   │   └── landing-page.spec.ts
