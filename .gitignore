@@ -54,6 +54,7 @@ blob-report/
 # Screenshots e vídeos gerados pelos testes
 
 playwright/.cache/
+playwright/.playwright-mcp
 
 ### IDEs
 
@@ -79,3 +80,14 @@ temp/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+### Playwright MCP (VS Code / Copilot Agent)
+.playwright-mcp/
+**/.playwright-mcp/
+
+# snapshots do MCP
+page-*.yml
+**/page-*.yml
+
+console-*.log
+**/console-*.log

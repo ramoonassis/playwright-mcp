@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
+    "module": "Node16",
     "strict": true,
     "skipLibCheck": true,
-    "types": ["@playwright/test"]
+    "types": ["node", "@playwright/test"]
   },
   "include": ["tests", "pages", "playwright.config.ts"]
 }
