@@ -7,5 +7,5 @@
     "skipLibCheck": true,
     "types": ["node", "@playwright/test"]
   },
-  "include": ["tests", "pages", "playwright.config.ts"]
+  "include": ["e2e", "tests", "pages", "playwright.config.ts"]
 }
