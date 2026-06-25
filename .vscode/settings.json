@@ -1,26 +1,26 @@
 {
-    // Desativa a visualização de pastas compactadas (ex: 'src/app' vira 'src' e 'app')
-    "explorer.compactFolders": false,
+  // Desativa a visualização de pastas compactadas (ex: 'src/app' vira 'src' e 'app')
+  "explorer.compactFolders": false,
 
-    // Exclui arquivos do explorador de arquivos (File Explorer)
-    "files.exclude": {
-        "**/node_modules": true,
-        "**/playwright-report": true,
-        "**/test-results": true
-    },
-    
-    // Exclui arquivos da pesquisa global (Search - Ctrl+Shift+F)
-    "search.exclude": {
-        "**/node_modules": true,
-        "**/playwright-report": true,
-        "**/test-results": true
-    },
-    // Exclui arquivos do Go to File (Ctrl+P) e do monitoramento de arquivos
-    "files.watcherExclude": {
-        "**/node_modules/**": true,
-        "**/playwright-report/**": true,
-        "**/test-results/**": true
-    },
+  // Exclui arquivos do explorador de arquivos (File Explorer)
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/playwright-report": true,
+    "**/test-results": true
+  },
+
+  // Exclui arquivos da pesquisa global (Search - Ctrl+Shift+F)
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/playwright-report": true,
+    "**/test-results": true
+  },
+  // Exclui arquivos do Go to File (Ctrl+P) e do monitoramento de arquivos
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/playwright-report/**": true,
+    "**/test-results/**": true
+  },
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
 
@@ -34,7 +34,11 @@
 
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "/^cmd /c npx playwright test test_ct001_search\\.spec\\.ts --project=chromium --reporter=list$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
   }
-
- 
 }
