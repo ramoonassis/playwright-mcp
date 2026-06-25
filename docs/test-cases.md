@@ -14,16 +14,19 @@ Estas regras se aplicam a **todos** os cenários abaixo:
 4. Todo bloco de ação tem um ponto de partida explícito (ex.: "a partir da página inicial"). Não inicie uma ação a partir de uma tela diferente da indicada.
 5. Se um elemento esperado não existir na tela atual, **pare a execução e relate o problema** em vez de tentar um caminho alternativo por conta própria.
 6. Aguarde o carregamento completo da página antes de executar o próximo step.
+7. Quando mais de um valor monetário estiver visível na mesma tela (ex.: preço "De:", preço "Por:" e preço "à vista"), use **somente** o valor explicitamente identificado pelo rótulo indicado no step. Nunca capture o primeiro valor monetário encontrado no DOM sem confirmar o rótulo correspondente.
 
 ## Massa de Dados
 
 ### Produto
 
-| Campo          | Valor                                      |
-| -------------- | ------------------------------------------ |
-| Produto        | Batedeira KitchenAid Artisan Mineral Water |
-| Voltagem       | 110 volts                                  |
-| Valor Esperado | R$ 2.399,00                                |
+| Campo                    | Valor                                      |
+| ------------------------ | ------------------------------------------ |
+| Produto                  | Batedeira KitchenAid Artisan Mineral Water |
+| Voltagem                 | 110 volts                                  |
+| Valor Esperado (à vista) | R$ 2.399,00                                |
+
+> **Observação sobre o preço:** na página do produto podem ser exibidos até três valores diferentes: um preço "De:" (riscado), um preço "Por:" (parcelado/cartão) e um preço "à vista" (Pix, com desconto). O **valor esperado nos cenários abaixo é sempre o preço "à vista"**, que aparece após o texto "Ou" e em destaque. Não confundir com os demais valores exibidos na mesma tela.
 
 ### Usuário
 
@@ -80,7 +83,8 @@ Scenario: Busca de produto com sucesso
 
   Then a página de resultados é exibida
   And o produto "Batedeira KitchenAid Artisan Mineral Water" aparece na lista de resultados
-  And o valor exibido no card do produto é "R$ 2.399,00"
+  And o valor "à vista" exibido no card do produto é "R$ 2.399,00"
+  (este é o valor em destaque após o texto "Ou"; ignore eventuais valores "De:" riscado ou "Por:" exibidos no mesmo card)
 ```
 
 ---
@@ -101,7 +105,8 @@ Scenario: Acesso à página do produto
 
   Then a página de detalhes do produto é exibida
   And o nome do produto exibido é "Batedeira KitchenAid Artisan Mineral Water"
-  And o valor exibido é "R$ 2.399,00"
+  And o valor "à vista" exibido na página do produto é "R$ 2.399,00"
+  (este é o valor em destaque após o texto "Ou"; ignore o valor "De:" riscado e o valor "Por:" exibidos na mesma tela)
   And o botão "Comprar" está visível e habilitado na página do produto
 ```
 
@@ -140,13 +145,14 @@ Scenario: Fluxo completo de compra com usuário autenticado
   Then a página de detalhes do produto é exibida
 
   # --- Seleção de variação e compra ---
-  When clica no botão "Comprar" na página do produto
+  # A seleção de voltagem ocorre diretamente na página do produto, antes do clique em "Comprar".
+  # Não há modal de seleção de variação neste fluxo.
 
-  Then um modal de seleção de variação é exibido
+  Then o seletor de voltagem "110v" / "220v" está visível na página do produto
 
-  When seleciona a opção "110 volts" no modal de variações
-  And clica no botão "Comprar" dentro do modal
-  (este é o botão "Comprar" do modal, diferente do botão "Comprar" da página do produto)
+  When seleciona a opção "110v" no seletor de voltagem da página do produto
+  (caso a opção "110v" já esteja selecionada por padrão, apenas confirme a seleção e não clique novamente)
+  And clica no botão "Comprar" na página do produto
 
   Then o produto é adicionado ao carrinho
 
@@ -185,6 +191,8 @@ Scenario: Fluxo completo de compra com usuário autenticado
     | total_final   | R$ 2.418,90  |
 ```
 
+> **Nota de validação prévia:** antes de executar este cenário, confirme na tela real se a seleção de voltagem realmente ocorre na página do produto (sem modal). Se a IA encontrar um modal de seleção de variação em vez do seletor direto na página, isso indica divergência entre este documento e o comportamento atual do site — pare a execução e relate a divergência, conforme a Regra Geral nº 5, em vez de adaptar o fluxo por conta própria.
+
 ---
 
 ## CT004 - Remover Produto do Carrinho
@@ -212,12 +220,15 @@ Scenario: Remover produto do carrinho
   And digita "Batedeira KitchenAid Artisan Mineral Water" no campo de busca
   And pressiona Enter ou clica no ícone de busca
   And clica no card/título do produto nos resultados
+
+  Then a página de detalhes do produto é exibida
+
+  # A seleção de voltagem ocorre diretamente na página do produto, antes do clique em "Comprar".
+  # Não há modal de seleção de variação neste fluxo.
+
+  When seleciona a opção "110v" no seletor de voltagem da página do produto
+  (caso a opção "110v" já esteja selecionada por padrão, apenas confirme a seleção e não clique novamente)
   And clica no botão "Comprar" na página do produto
-
-  Then um modal de seleção de variação é exibido
-
-  When seleciona a opção "110 volts" no modal de variações
-  And clica no botão "Comprar" dentro do modal
 
   Then o produto é adicionado ao carrinho
 
@@ -232,3 +243,5 @@ Scenario: Remover produto do carrinho
 
   Then o carrinho está vazio ou exibe a mensagem de carrinho sem itens
 ```
+
+> **Nota de validação prévia:** mesma observação do CT003 — caso a IA encontre um modal de variação em vez do seletor direto, deve parar e relatar a divergência, em vez de seguir um caminho alternativo.
