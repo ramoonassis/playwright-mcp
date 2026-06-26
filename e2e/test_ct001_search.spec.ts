@@ -1,42 +1,23 @@
-import { test, expect } from "@playwright/test";
-import dotenv from "dotenv";
+import { test, expect } from "../fixtures/test-options";
+import { product } from "../config/test-data";
 
-dotenv.config();
+test.describe("Busca de produto", () => {
+  test("CT001 - Busca de produto com sucesso", async ({
+    homePage,
+    searchResultsPage,
+  }, testInfo) => {
+    await homePage.goto();
+    await homePage.searchFor(product.searchTerm);
 
-function requiredEnv(name: string): string {
-  const value = process.env[name];
+    const productCard = searchResultsPage.productCard(product.searchTerm);
 
-  if (!value) {
-    throw new Error(`Variável obrigatória não encontrada: ${name}`);
-  }
+    await expect(productCard).toHaveCount(1);
+    await expect(productCard).toContainText(product.searchTerm);
+    await expect(productCard).toContainText(product.expectedPrice);
 
-  return value;
-}
-
-const SEARCH_TERM = requiredEnv("SEARCH_TERM");
-const EXPECTED_PRICE = requiredEnv("EXPECTED_PRICE");
-
-test("CT001 - Busca de produto com sucesso", async ({ page }) => {
-  await page.goto("/");
-
-  const search = page
-    .getByPlaceholder("Procure produtos KitchenAid")
-    .filter({ visible: true });
-
-  await expect(search).toBeVisible();
-
-  await search.fill(SEARCH_TERM);
-  await search.press("Enter");
-
-  const productCard = page.locator("article").filter({ hasText: SEARCH_TERM });
-
-  await expect(productCard).toHaveCount(1);
-
-  await expect(productCard).toContainText(SEARCH_TERM);
-  await expect(productCard).toContainText(EXPECTED_PRICE);
-
-  await page.screenshot({
-    path: "test-results/evidence/ct001-search-results.png",
-    fullPage: true,
+    await testInfo.attach("ct001-search-results", {
+      body: await homePage.page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
   });
 });
