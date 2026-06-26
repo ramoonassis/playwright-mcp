@@ -131,7 +131,7 @@ Scenario: Fluxo completo de compra com usuário autenticado
   (NÃO clique em "Entrar com Google", "Entrar com Facebook" ou qualquer outro login social)
 
   Then o usuário é autenticado com sucesso
-  And é redirecionado para a página inicial
+  And é redirecionado para a página Minha Conta
 
   # --- Busca do produto ---
   When, a partir da página inicial, clica no campo de busca no topo da página
@@ -146,13 +146,19 @@ Scenario: Fluxo completo de compra com usuário autenticado
 
   # --- Seleção de variação e compra ---
   # A seleção de voltagem ocorre diretamente na página do produto, antes do clique em "Comprar".
-  # Não há modal de seleção de variação neste fluxo.
+  # Observação: após clicar em "Comprar" na página, o site pode exibir um modal
+  # de confirmação da variação/voltagem. Nesse caso é necessário confirmar a
+  # voltagem exibida e clicar em "Comprar" dentro do modal para prosseguir.
 
   Then o seletor de voltagem "110v" / "220v" está visível na página do produto
 
   When seleciona a opção "110v" no seletor de voltagem da página do produto
   (caso a opção "110v" já esteja selecionada por padrão, apenas confirme a seleção e não clique novamente)
   And clica no botão "Comprar" na página do produto
+
+  # Se for exibido um modal de confirmação de voltagem após o clique em "Comprar",
+  # confirme que a voltagem apresentada está correta e clique em "Comprar" dentro do modal.
+  When, se for exibido um modal de confirmação de voltagem, clica no botão "Comprar" dentro do modal
 
   Then o produto é adicionado ao carrinho
 
@@ -167,17 +173,32 @@ Scenario: Fluxo completo de compra com usuário autenticado
 
   Then a tela de dados pessoais é exibida
 
-  When preenche o campo "Primeiro nome" com ${FIRST_NAME}
-  And preenche o campo "Último nome" com ${LAST_NAME}
-  And preenche o campo "CPF" com ${CPF}
-  And preenche o campo "Telefone" com ${PHONE}
-  And clica em "Ir para entrega"
+When dentro do card "Dados pessoais", preenche sequencialmente:
+  | campo          | valor        |
+  | Primeiro nome  | ${FIRST_NAME}|
+  | Último nome    | ${LAST_NAME} |
+  | CPF            | ${CPF}       |
+  | Telefone       | ${PHONE}     |
+
+And valida que não existem mensagens de erro visíveis no card "Dados pessoais"
+
+And clica no botão "Ir para entrega" dentro da sessão "Dados pessoais"
+
+  Then o botão "Ir para entrega" deve estar habilitado
 
   # --- Endereço ---
-  Then a tela de entrega é exibida
+  Then a seção de entrega é exibida
+
+  | campo          | regra                         |
+  | CEP            | obrigatório                  |
+  | Destinatário   | obrigatório                  |
+
 
   When preenche o campo "CEP" com ${CEP}
   And preenche o campo "Número" com ${ADDRESS_NUM}
+  And preenche o campo "Destinatário" com ${FIRST_NAME}
+  And valida que não existem mensagens de erro visíveis no card "Entrega"
+
   And clica em "Ir para pagamento"
 
   # --- Pagamento ---
@@ -185,13 +206,13 @@ Scenario: Fluxo completo de compra com usuário autenticado
 
   When seleciona a forma de pagamento "Pix"
 
-  Then o resumo do pagamento exibe os seguintes valores:
+  Then A sessão Resumo do Pedido exibe os seguintes valores:
     | valor_produto | R$ 2.399,00  |
     | frete         | R$ 19,90     |
     | total_final   | R$ 2.418,90  |
 ```
 
-> **Nota de validação prévia:** antes de executar este cenário, confirme na tela real se a seleção de voltagem realmente ocorre na página do produto (sem modal). Se a IA encontrar um modal de seleção de variação em vez do seletor direto na página, isso indica divergência entre este documento e o comportamento atual do site — pare a execução e relate a divergência, conforme a Regra Geral nº 5, em vez de adaptar o fluxo por conta própria.
+> **Nota de validação prévia:** antes de executar este cenário, confirme na tela real se a seleção de voltagem ocorre na página do produto. O site atualmente pode exibir um modal de confirmação de voltagem após o clique em "Comprar"; nesse caso, confirme a voltagem no modal e clique em "Comprar" dentro do modal para prosseguir. Se houver divergência significativa no comportamento além desse modal, pare a execução e relate a divergência, conforme a Regra Geral nº 5.
 
 ---
 
@@ -224,11 +245,17 @@ Scenario: Remover produto do carrinho
   Then a página de detalhes do produto é exibida
 
   # A seleção de voltagem ocorre diretamente na página do produto, antes do clique em "Comprar".
-  # Não há modal de seleção de variação neste fluxo.
+  # Observação: após clicar em "Comprar" na página, o site pode exibir um modal
+  # de confirmação da variação/voltagem. Nesse caso é necessário confirmar a
+  # voltagem exibida e clicar em "Comprar" dentro do modal para prosseguir.
 
   When seleciona a opção "110v" no seletor de voltagem da página do produto
   (caso a opção "110v" já esteja selecionada por padrão, apenas confirme a seleção e não clique novamente)
   And clica no botão "Comprar" na página do produto
+
+  # Se for exibido um modal de confirmação de voltagem após o clique em "Comprar",
+  # confirme que a voltagem apresentada está correta e clique em "Comprar" dentro do modal.
+  When, se for exibido um modal de confirmação de voltagem, clica no botão "Comprar" dentro do modal
 
   Then o produto é adicionado ao carrinho
 
@@ -244,4 +271,4 @@ Scenario: Remover produto do carrinho
   Then o carrinho está vazio ou exibe a mensagem de carrinho sem itens
 ```
 
-> **Nota de validação prévia:** mesma observação do CT003 — caso a IA encontre um modal de variação em vez do seletor direto, deve parar e relatar a divergência, em vez de seguir um caminho alternativo.
+> **Nota de validação prévia:** o site atualmente pode exibir um modal de confirmação de voltagem após o clique em "Comprar". Nesse caso, confirme a voltagem mostrada e clique em "Comprar" dentro do modal para prosseguir com o fluxo. Se houver divergência significativa no comportamento além desse modal, pare e relate a divergência.
