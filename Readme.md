@@ -103,10 +103,8 @@ npx playwright test --reporter=list
 
 ```text
 playwright-mcp/
-├── tests/
-│   ├── e2e/
-│   │   └── landing-page.spec.ts
-│   └── example.spec.ts
+├── e2e/
+│   └── landing-page.spec.ts
 ├── pages/
 ├── playwright.config.ts
 ├── package.json
