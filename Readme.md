@@ -102,13 +102,16 @@ npx playwright test --reporter=list
 ## Estrutura do projeto
 
 ```text
-.
-├── config/          → leitura e organização dos dados de teste (via .env)
-├── docs/            → documentação dos cenários de teste
-├── e2e/             → arquivos de teste (um por cenário)
-├── fixtures/        → configurações reutilizáveis para os testes
-├── pages/           → um arquivo por página do site (Page Objects)
-└── .env             → credenciais e dados esperados (não versionado)
+playwright-mcp/
+├── tests/
+│   ├── e2e/
+│   │   └── landing-page.spec.ts
+│   └── example.spec.ts
+├── pages/
+├── playwright.config.ts
+├── package.json
+├── tsconfig.json
+└── README.md
 ```
 
 ### `config/`
@@ -125,24 +128,21 @@ Essa separação concentra a lógica de cada página em um único arquivo, de fo
 
 Define as configurações disponibilizadas automaticamente para os testes. Existem duas variações:
 
-- uma que entrega as páginas já instanciadas, sem autenticação;
-- uma que entrega o navegador já com login realizado, para cenários que exigem usuário autenticado.
+  use: {
+    baseURL: 'https://www.kitchenaid.com.br',
+    headless: true,
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure'
+  }
+});
+```
 
 ### `e2e/`
 
-Contém os testes propriamente ditos. Cada arquivo corresponde a um cenário documentado em `docs/`:
-
-| Arquivo                           | Cenário                                                                 |
-| --------------------------------- | ----------------------------------------------------------------------- |
-| `test_ct001_search.spec.ts`       | Busca de produto e validação do preço exibido                           |
-| `test_ct002_product_page.spec.ts` | Acesso à página do produto e validação de nome, preço e botão de compra |
-| `test_ct003_checkout.spec.ts`     | Login, compra do produto e fechamento de pedido até o pagamento         |
-| `test_ct004_remove.spec.ts`       | Adição e remoção de um produto do carrinho                              |
-
-### `docs/`
-
-- `kitchenaid.feature`: descreve os cenários de teste em formato BDD, em linguagem acessível a quem não lê código.
-- `sdet-automator.prompt.md`: diretrizes internas utilizadas na criação dos testes.
+```env
+BASE_URL=https://www.kitchenaid.com.br
+HEADLESS=true
+```
 
 ---
 
@@ -156,10 +156,10 @@ test("CT001 - Busca de produto com sucesso", async ({
   await homePage.goto();
   await homePage.searchFor(product.searchTerm);
 
-  const productCard = searchResultsPage.productCard(product.searchTerm);
+test('home @e2e', async ({ page }) => {
+  await page.goto('https://kitchenaid.com.br');
 
-  await expect(productCard).toContainText(product.searchTerm);
-  await expect(productCard).toContainText(product.expectedPrice);
+  await expect(page).toHaveTitle('Projeto Kitchen Aid');
 });
 ```
 
