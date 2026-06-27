@@ -6,7 +6,7 @@ test.describe("Checkout", () => {
     await cartPage.removeAllItems();
   });
 
-  test("CT003 - Fluxo completo de compra com usuário autenticado", async ({
+  test("@e2e @smoke - CT003 - Fluxo completo de compra com usuário autenticado", async ({
     homePage,
     searchResultsPage,
     productPage,

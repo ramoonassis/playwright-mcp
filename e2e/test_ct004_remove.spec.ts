@@ -6,7 +6,7 @@ test.describe("Carrinho", () => {
     await cartPage.removeAllItems();
   });
 
-  test("CT004 - Remover produto do carrinho", async ({
+  test("@e2e @smoke - CT004 - Remover produto do carrinho", async ({
     homePage,
     searchResultsPage,
     productPage,

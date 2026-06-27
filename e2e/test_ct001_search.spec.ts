@@ -2,7 +2,7 @@ import { test, expect } from "../fixtures/test-options";
 import { product } from "../config/test-data";
 
 test.describe("Busca de produto", () => {
-  test("CT001 - Busca de produto com sucesso", async ({
+  test("@e2e @smoke - CT001 - Busca de produto com sucesso", async ({
     homePage,
     searchResultsPage,
   }, testInfo) => {
