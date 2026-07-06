@@ -8,11 +8,15 @@ export class SearchResultsPage {
   }
 
   productCard(searchTerm: string): Locator {
-    return this.page.locator("article").filter({ hasText: searchTerm });
+    return this.page
+      .locator("article:not(.vtex-search-2-x-itemList)")
+      .filter({ hasText: searchTerm });
   }
 
   productLink(linkName: string): Locator {
-    return this.page.getByRole("link", { name: linkName });
+    return this.page.getByRole("link", { name: linkName }).filter({
+      has: this.page.locator('article')
+    }).first();
   }
 
   async expectProductListedWithPrice(
@@ -27,6 +31,8 @@ export class SearchResultsPage {
   }
 
   async openProduct(linkName: string): Promise<void> {
-    await this.productLink(linkName).click();
+    const link = this.productLink(linkName);
+    await link.waitFor({ state: "visible" });
+    await link.click({ noWaitAfter: true });
   }
 }

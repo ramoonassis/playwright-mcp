@@ -1,5 +1,5 @@
 import { authenticatedTest as test, expect } from "../fixtures/test-options";
-import { product } from "../config/test-data";
+import { removeProduct } from "../config/test-data";
 
 test.describe("Carrinho", () => {
   test.beforeEach(async ({ cartPage }) => {
@@ -13,24 +13,27 @@ test.describe("Carrinho", () => {
     cartPage,
   }) => {
     await homePage.goto();
-    await homePage.searchFor(product.searchTerm);
+    await homePage.searchFor(removeProduct.searchTerm);
     await searchResultsPage.expectProductListedWithPrice(
-      product.productLinkName,
-      product.expectedPrice,
+      removeProduct.productLinkName,
+      removeProduct.expectedPrice,
     );
 
-    await searchResultsPage.openProduct(product.productLinkName);
+    await searchResultsPage.openProduct(removeProduct.productLinkName);
     await productPage.expectLoadedFor(
-      product.searchTerm,
-      product.expectedPrice,
+      removeProduct.searchTerm,
+      removeProduct.expectedPrice,
+      removeProduct.urlPattern,
     );
     await productPage.addToCart();
 
-    await expect(cartPage.summary).toContainText(product.searchTerm);
+    await expect(cartPage.summary).toContainText(removeProduct.searchTerm);
 
-    await cartPage.removeFirstItem();
+    await cartPage.removeItemByName(removeProduct.searchTerm);
 
-    await expect(cartPage.summary).not.toContainText(product.searchTerm);
+    await expect(cartPage.summary).not.toContainText(removeProduct.searchTerm);
+
+    // Como cada thread (worker) usa um usuário único e isolado, o carrinho deve estar totalmente vazio agora!
     await expect(cartPage.emptyCartMessage).toBeVisible();
   });
 });
