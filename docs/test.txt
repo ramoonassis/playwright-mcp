@@ -1,0 +1,246 @@
+Você é um especialista em apresentações executivas, storytelling corporativo e design de apresentações de alto impacto.
+
+Sua missão é criar uma apresentação completa (entre 10 e 15 slides) para representar o encerramento da parceria entre uma consultoria de QA e uma empresa cliente.
+
+Essa apresentação será utilizada em uma reunião de encerramento para demonstrar o impacto da parceria, os resultados alcançados, as iniciativas implementadas, a evolução dos processos e o legado deixado pela equipe.
+
+Não quero apenas um roteiro de slides. Quero que você atue como um consultor de apresentações executivas, propondo a melhor narrativa, estrutura, identidade visual, tipos de infográficos, gráficos, diagramas, timelines e formas de representar cada informação de maneira clara e impactante.
+
+### Objetivos da apresentação
+
+* Demonstrar o valor entregue ao cliente.
+* Mostrar a evolução da parceria ao longo do tempo.
+* Evidenciar melhorias de processo.
+* Destacar iniciativas estratégicas.
+* Apresentar métricas e resultados.
+* Mostrar o legado deixado para a organização.
+* Encerrar a parceria de forma positiva e profissional.
+
+## Estilo visual
+
+A apresentação deve ter aparência executiva e moderna, semelhante às apresentações da McKinsey, Deloitte, Accenture, Google ou Microsoft.
+
+Utilizar:
+
+* Ícones
+* Infográficos
+* Dashboards
+* Cards
+* Timelines
+* Fluxogramas
+* Diagramas
+* Roadmaps
+* Gráficos
+* Comparativos Antes × Depois
+* Destaques visuais para KPIs
+
+Quero sugestões de layout para cada slide, indicando a melhor forma de representar visualmente cada informação.
+
+## Estrutura sugerida
+
+### Slide 1 — Capa
+
+Criar uma abertura elegante contendo:
+
+* Título
+* Subtítulo
+* Identidade visual tecnológica
+* Sugestão de imagem ou ilustração de fundo
+
+---
+
+### Slide 2 — Nossa Jornada
+
+Construir uma timeline mostrando a evolução da parceria.
+
+Exemplo:
+
+Início da atuação
+
+↓
+
+Primeiras melhorias
+
+↓
+
+Padronização do QA
+
+↓
+
+Implementação de IA
+
+↓
+
+Projetos estratégicos
+
+↓
+
+Consolidação
+
+↓
+
+Legado entregue
+
+Sugerir um formato visual para essa timeline.
+
+---
+
+### Slide 3 — Nossa Atuação
+
+Apresentar as principais frentes de atuação utilizando um infográfico.
+
+Incluir:
+
+* Implementação de IA no fluxo do Jira
+* Criação de agentes de IA
+* Avaliação contínua de métricas
+* Construção de documentações
+* Produção de apresentações executivas
+* Atuação em plataformas internacionais
+* Apoio ao lançamento de novos jogos
+* Onboarding e consultoria para novos QAs
+* Implementação do DevBox
+* Estruturação de testes regressivos em múltiplas squads
+
+Sugerir ícones para cada iniciativa.
+
+---
+
+### Slide 4 — Transformação dos Processos
+
+Mostrar um comparativo "Antes × Depois".
+
+Exemplos:
+
+Antes
+
+* Processos manuais
+* Baixa padronização
+* Pouco uso de dados
+* Menor produtividade
+
+Depois
+
+* IA integrada
+* Processos estruturados
+* Decisões orientadas por métricas
+* Maior produtividade
+* Melhor colaboração entre squads
+
+Representar utilizando um comparativo visual.
+
+---
+
+### Slide 5 — Inteligência Artificial
+
+Dedicar um slide para mostrar como a IA foi incorporada ao fluxo de trabalho.
+
+Explicar visualmente:
+
+* Fluxo do Jira
+* Agentes criados
+* Escrita assistida de cenários
+* Ganho de produtividade
+* Padronização
+
+Sugerir um diagrama moderno.
+
+---
+
+### Slide 6 — Projetos Estratégicos
+
+Destacar a atuação em iniciativas de maior impacto.
+
+Exemplos:
+
+* Plataformas internacionais
+* Novos jogos
+* Demandas críticas
+* Apoio às squads
+
+Utilizar cards ilustrados.
+
+---
+
+### Slide 7 — Evolução do QA
+
+Mostrar a evolução da maturidade do processo de qualidade.
+
+Utilizar um roadmap ou gráfico de evolução.
+
+---
+
+### Slide 8 — Métricas
+
+Criar um dashboard executivo contendo placeholders para:
+
+* Casos de teste criados
+* Casos de teste executados
+* Bugs encontrados
+* Bugs evitados em produção
+* Horas economizadas
+* Redução de retrabalho
+* Ganho de produtividade com IA
+* Documentações produzidas
+* Onboardings realizados
+
+Sugerir quais gráficos utilizar para cada indicador.
+
+---
+
+### Slide 9 — Impacto para o Negócio
+
+Mostrar os benefícios gerados.
+
+Exemplos:
+
+* Maior qualidade
+* Entregas mais rápidas
+* Redução de riscos
+* Maior colaboração
+* Processos escaláveis
+* Apoio às decisões
+* Cultura de melhoria contínua
+
+Utilizar um infográfico executivo.
+
+---
+
+### Slide 10 — Legado
+
+Mostrar tudo que permanece após o encerramento da parceria.
+
+Exemplos:
+
+* Processos definidos
+* Documentação consolidada
+* IA integrada ao fluxo
+* Agentes reutilizáveis
+* Dashboards
+* Conhecimento disseminado
+* Equipes capacitadas
+
+Representar utilizando um diagrama visual.
+
+---
+
+### Slide 11 — Encerramento
+
+Criar um slide elegante de agradecimento.
+
+Incluir uma mensagem institucional demonstrando orgulho pela parceria e reforçando que o trabalho realizado continuará gerando valor para a organização.
+
+## Instruções finais
+
+Para cada slide, informe:
+
+* Objetivo do slide.
+* Sugestão de layout.
+* Tipo de infográfico.
+* Tipo de gráfico (quando aplicável).
+* Ícones recomendados.
+* Ideias de animações discretas.
+* Sugestões de imagens ou ilustrações.
+* Como tornar o slide visualmente impactante.
+
+O resultado deve parecer uma apresentação preparada por uma grande consultoria estratégica, equilibrando profundidade técnica, impacto visual e uma narrativa envolvente do início ao fim.
