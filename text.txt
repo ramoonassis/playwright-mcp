@@ -1,0 +1,731 @@
+Quero que você faça uma análise técnica completa de performance do meu Adapter Agent + Orchestrator, com foco em entender por que o processo de adaptação de uma suíte de testes de um país para outro está levando tempo excessivo.
+
+IMPORTANTE:
+
+* Neste momento, NÃO altere código, prompts, arquivos ou arquitetura.
+* Primeiro faça somente uma análise e diagnóstico.
+* Não simplifique ou remova as regras atuais do Adapter apenas para ganhar velocidade.
+* A qualidade da adaptação precisa ser preservada.
+* Quero identificar os gargalos reais antes de implementar qualquer otimização.
+
+## Contexto do Adapter
+
+O objetivo do Adapter é criar uma nova suíte de testes para um país a partir de uma suíte existente de outro país.
+
+Exemplo:
+
+País origem:
+Colômbia
+
+País destino:
+México
+
+A suíte da Colômbia já existe e funciona.
+
+A suíte do México ainda não existe.
+
+A aplicação dos dois países possui uma estrutura muito semelhante, mas existem diferenças de:
+
+* URLs;
+* dados;
+* conteúdo;
+* produtos;
+* preços;
+* textos;
+* componentes;
+* locators;
+* configurações;
+* regras específicas do país;
+* comportamento de algumas funcionalidades;
+* integrações;
+* navegação;
+* parâmetros;
+* dados de teste.
+
+O fluxo atual é aproximadamente:
+
+1. Configuro o ambiente/setup do México.
+2. Utilizo a suíte da Colômbia como base.
+3. Executo os testes da Colômbia contra o ambiente do México.
+4. Coleto os testes que falham.
+5. O Orchestrator agrupa as falhas em batches.
+6. O Adapter Agent analisa as falhas.
+7. O Agent identifica o que precisa ser adaptado para o México.
+8. Ele modifica/adapta os testes.
+9. Executa novamente os testes.
+10. Analisa as novas falhas.
+11. Continua iterando até que a suíte esteja adaptada.
+
+A suíte da Colômbia deve permanecer intacta.
+
+O resultado final deve ser uma suíte equivalente para o México, aproveitando o máximo possível da suíte existente da Colômbia e alterando somente aquilo que realmente é específico do México.
+
+Atualmente esse processo é extremamente lento.
+
+Como referência, uma adaptação de aproximadamente 250 testes chegou a consumir quase 48 horas de execução contínua.
+
+Esse tempo é muito alto para um processo que, na maioria dos casos, envolve relativamente poucos ajustes por teste.
+
+Quero descobrir por que isso está acontecendo e como podemos reduzir drasticamente esse tempo sem perder qualidade.
+
+---
+
+# 1. Analise o workflow completo
+
+Analise todo o fluxo:
+
+Colombia Suite
+↓
+Mexico Environment
+↓
+Initial Run
+↓
+Failure Collection
+↓
+Batching
+↓
+Adapter Agent
+↓
+Investigation
+↓
+Adaptation
+↓
+Test Execution
+↓
+Validation
+↓
+Next Batch / Iteration
+
+Identifique todos os pontos em que o processo pode estar adicionando latência.
+
+Não presuma que o problema está no Gemini.
+
+Quero que você investigue o workflow como um sistema.
+
+---
+
+# 2. Investigue serialização excessiva
+
+Um dos principais pontos que quero investigar é se o Adapter está trabalhando de forma excessivamente sequencial.
+
+Procure por fluxos como:
+
+Test 1
+→ investigar
+→ adaptar
+→ executar
+→ validar
+
+Test 2
+→ investigar
+→ adaptar
+→ executar
+→ validar
+
+Test 3
+→ investigar
+→ adaptar
+→ executar
+→ validar
+
+Esse modelo pode ser extremamente caro em uma suíte de 250 testes.
+
+Avalie se existem situações em que vários testes poderiam ser analisados ou adaptados conjuntamente.
+
+IMPORTANTE:
+
+Não quero simplesmente "paralelizar tudo".
+
+Quero identificar operações que podem ser paralelizadas com segurança e operações que precisam permanecer sequenciais.
+
+---
+
+# 3. Identifique padrões de adaptação
+
+Este é um dos pontos MAIS IMPORTANTES da análise.
+
+O Adapter está migrando uma suíte inteira de um país para outro.
+
+Portanto, é muito provável que várias falhas tenham a mesma causa.
+
+Exemplo:
+
+20 testes falham porque:
+
+/co/product/...
+
+precisa ser:
+
+/mx/product/...
+
+Nesse caso, não quero que o Agent descubra essa mesma regra 20 vezes.
+
+Quero que ele seja capaz de identificar:
+
+"Existe uma regra de adaptação de país."
+
+E então aplicar essa regra aos testes afetados.
+
+Procure padrões como:
+
+* mudança de domínio;
+* mudança de locale;
+* mudança de URL;
+* mudança de país;
+* mudança de moeda;
+* mudança de textos;
+* mudança de produtos;
+* mudança de dados;
+* mudança de IDs;
+* mudança de locators;
+* mudança de componentes;
+* mudança de parâmetros;
+* mudanças de configuração;
+* diferenças de navegação;
+* diferenças de comportamento.
+
+Avalie se o Adapter está aprendendo essas regras durante a migração ou se está descobrindo novamente a mesma coisa em cada teste.
+
+---
+
+# 4. Crie o conceito de "migration knowledge"
+
+Avalie se o Adapter poderia manter um conhecimento temporário da migração.
+
+Por exemplo:
+
+Durante os primeiros 20 testes ele descobre:
+
+Rule 1:
+Colombia URL → Mexico URL
+
+Rule 2:
+COP → MXN
+
+Rule 3:
+country=co → country=mx
+
+Rule 4:
+Product ID A → Product ID B
+
+Rule 5:
+algum locator específico mudou.
+
+A partir daí, quando outros testes apresentarem o mesmo padrão, o Agent deveria conseguir reconhecer:
+
+"Essa falha provavelmente é causada por uma regra que já identifiquei."
+
+Em vez de investigar tudo novamente.
+
+Avalie como esse conhecimento poderia ser mantido sem criar um contexto gigantesco.
+
+Pode ser:
+
+* resumo;
+* migration map;
+* adaptation rules;
+* migration knowledge file;
+* estado estruturado;
+* cache;
+* memória temporária da execução;
+* ou outra abordagem.
+
+Não implemente ainda.
+
+Apenas avalie qual seria a melhor estratégia.
+
+---
+
+# 5. Compare investigação individual vs investigação por padrão
+
+Quero saber se o Adapter está fazendo:
+
+Failure A
+→ investigação completa
+
+Failure B
+→ investigação completa
+
+Failure C
+→ investigação completa
+
+mesmo quando A, B e C possuem a mesma causa.
+
+Avalie se seria possível fazer:
+
+Failures A/B/C
+↓
+identificar causa comum
+↓
+criar regra de adaptação
+↓
+aplicar aos três
+↓
+validar conjunto
+
+Esse comportamento é especialmente importante porque estamos fazendo uma migração de país e não simplesmente corrigindo testes quebrados aleatoriamente.
+
+---
+
+# 6. Analise as execuções do Playwright
+
+Investigue quantas vezes os testes estão sendo executados.
+
+Procure situações como:
+
+Run 1
+→ falha
+
+corrige
+
+Run 2
+→ falha
+
+corrige
+
+Run 3
+→ falha
+
+corrige
+
+Run 4
+→ sucesso
+
+Avalie se algumas dessas execuções poderiam ser agrupadas.
+
+Também investigue:
+
+* browser startup;
+* browser shutdown;
+* context creation;
+* page creation;
+* navigation;
+* login;
+* setup;
+* teardown;
+* autenticação;
+* carregamento de dados;
+* fixtures;
+* snapshots;
+* screenshots;
+* retries;
+* timeouts.
+
+Quero saber se o Adapter está pagando esse custo repetidamente para cada pequeno ajuste.
+
+---
+
+# 7. Analise retries e timeouts
+
+Procure especificamente por:
+
+* retries automáticos;
+* timeouts muito grandes;
+* waits;
+* sleep;
+* polling;
+* waiting for selectors;
+* waiting for navigation;
+* espera por rede;
+* espera por elementos;
+* retries do Playwright;
+* retries do Orchestrator;
+* retries do próprio Agent.
+
+Um teste que deveria falhar em 10 segundos pode estar demorando 60–120 segundos por causa de timeout.
+
+Multiplique isso por centenas de testes e podemos ter horas desperdiçadas.
+
+Quero que você identifique esses casos.
+
+---
+
+# 8. Analise chamadas ao Agent/Gemini
+
+Mapeie quantas vezes o Gemini é acionado.
+
+Quero identificar:
+
+* quantidade de chamadas por batch;
+* quantidade de chamadas por teste;
+* chamadas repetidas;
+* chamadas que poderiam ser consolidadas;
+* chamadas que existem somente por causa do Orchestrator;
+* chamadas que poderiam processar múltiplos testes;
+* chamadas que poderiam reutilizar contexto.
+
+Compare conceitualmente com uma sessão direta no Gemini CLI.
+
+Quero entender por que uma conversa contínua pode ser significativamente mais rápida do que o Agent + Orchestrator.
+
+---
+
+# 9. Analise o contexto
+
+Investigue se o Adapter está reconstruindo constantemente:
+
+* instruções;
+* regras;
+* contexto do projeto;
+* contexto da migração;
+* informações do país origem;
+* informações do país destino;
+* arquivos;
+* resultados anteriores;
+* erros;
+* screenshots;
+* DOM;
+* snapshots;
+* histórico.
+
+Se isso estiver acontecendo, avalie como reduzir essa repetição.
+
+Quero preservar o contexto importante, mas evitar enviar ou reconstruir informações desnecessárias.
+
+---
+
+# 10. Analise o MCP / Playwright
+
+Investigue o uso das ferramentas do browser.
+
+Procure excesso de:
+
+* snapshot;
+* screenshot;
+* find;
+* navigate;
+* click;
+* hover;
+* evaluate;
+* inspect;
+* locator discovery;
+* leitura de DOM;
+* chamadas repetidas ao browser.
+
+Quero saber se o Agent está fazendo investigação excessivamente granular.
+
+Avalie se algumas informações poderiam ser coletadas uma única vez e reutilizadas durante a adaptação de vários testes.
+
+---
+
+# 11. Analise o Orchestrator
+
+Analise especificamente o comportamento do Orchestrator.
+
+Procure:
+
+* loops desnecessários;
+* polling;
+* waits;
+* subprocessos;
+* processos criados repetidamente;
+* sessões criadas repetidamente;
+* leitura de arquivos repetida;
+* parsing repetido;
+* serialização/deserialização;
+* chamadas síncronas;
+* batches pequenos demais;
+* batches grandes demais;
+* reprocessamento de falhas;
+* execução repetida dos mesmos testes.
+
+Quero entender quanto tempo o Orchestrator está adicionando ao processo.
+
+---
+
+# 12. Analise o tamanho ideal dos batches
+
+O Adapter já trabalha com batches.
+
+Não quero simplesmente implementar batching.
+
+Quero descobrir se o tamanho atual dos batches é eficiente.
+
+Avalie cenários como:
+
+5 testes
+10 testes
+20 testes
+30 testes
+50 testes
+
+e considere:
+
+* tamanho do contexto;
+* tempo de processamento;
+* quantidade de tool calls;
+* qualidade da análise;
+* capacidade de identificar padrões;
+* quantidade de retrabalho;
+* tempo total.
+
+O objetivo é encontrar um ponto ótimo.
+
+---
+
+# 13. Analise dependências entre testes
+
+Investigue se todos os testes realmente precisam ser processados sequencialmente.
+
+Identifique:
+
+* testes independentes;
+* testes que compartilham estado;
+* testes que dependem de dados;
+* testes que podem ser executados em paralelo;
+* testes que modificam estado global;
+* testes que precisam de ordem específica.
+
+Quero uma classificação:
+
+SAFE TO PARALLELIZE
+
+vs.
+
+MUST REMAIN SEQUENTIAL
+
+---
+
+# 14. Procure por "correção mínima"
+
+O objetivo do Adapter não é reescrever a suíte.
+
+Ele deve criar uma versão do México baseada na Colômbia.
+
+Portanto, investigue se o Agent está fazendo alterações maiores do que o necessário.
+
+Quero preservar:
+
+* estrutura;
+* Page Objects;
+* lógica;
+* arquitetura;
+* padrões;
+* cobertura.
+
+E alterar somente aquilo que realmente precisa ser específico do México.
+
+Avalie se alterações excessivamente grandes estão causando retrabalho ou novas falhas.
+
+---
+
+# 15. Avalie possibilidade de pré-adaptação
+
+Este é outro ponto importante.
+
+Antes de executar os 250 testes contra o México, talvez algumas diferenças entre os países possam ser identificadas previamente.
+
+Por exemplo:
+
+* URLs;
+* domínio;
+* locale;
+* moeda;
+* country codes;
+* configurações;
+* dados;
+* arquivos de configuração;
+* variáveis de ambiente;
+* constantes;
+* caminhos;
+* produtos conhecidos.
+
+Analise se seria possível identificar essas diferenças antes da primeira execução e criar uma camada inicial de adaptação.
+
+A ideia seria:
+
+Em vez de:
+
+250 testes
+↓
+250 falhas
+↓
+investigar
+
+poderíamos fazer:
+
+Colombia → Mexico migration analysis
+↓
+identificar diferenças conhecidas
+↓
+aplicar adaptações previsíveis
+↓
+executar testes
+↓
+investigar somente diferenças reais
+
+Não implemente isso ainda. Apenas avalie a viabilidade.
+
+---
+
+# 16. Identifique "falhas esperadas de migração"
+
+Quero que você diferencie:
+
+A) falha causada por uma diferença conhecida entre países
+
+de
+
+B) falha causada por um problema real no teste/aplicação.
+
+Por exemplo:
+
+"Expected Colombia product but Mexico has different product"
+
+pode ser uma adaptação esperada.
+
+Já:
+
+"Element does not exist because the component changed"
+
+pode exigir investigação.
+
+Avalie se o Adapter está gastando tempo demais tratando A como se fosse B.
+
+---
+
+# 17. Crie uma estratégia de aprendizado incremental
+
+Avalie uma arquitetura onde a migração evolui assim:
+
+Initial run
+↓
+discover adaptation rules
+↓
+store rules
+↓
+apply rules to remaining tests
+↓
+run again
+↓
+discover only new patterns
+↓
+update rules
+↓
+apply again
+
+Ou seja:
+
+O custo de descoberta deveria diminuir conforme a migração avança.
+
+Quero saber se atualmente acontece o contrário, isto é:
+
+cada novo batch começa praticamente do zero.
+
+---
+
+# 18. Quero uma análise quantitativa
+
+Sempre que possível, extraia métricas do código atual.
+
+Quero saber:
+
+* tempo por batch;
+* tempo por teste;
+* quantidade de chamadas ao Agent;
+* quantidade de chamadas ao Gemini;
+* quantidade de tool calls;
+* quantidade de execuções;
+* quantidade de retries;
+* quantidade de timeouts;
+* tempo de browser;
+* tempo de investigação;
+* tempo de aplicação da correção;
+* tempo de validação;
+* tempo gasto pelo Orchestrator.
+
+Se alguma métrica não puder ser obtida pelo código, deixe isso explícito.
+
+Nesse caso, indique exatamente qual instrumentação deveria ser adicionada.
+
+---
+
+# 19. Quero uma proposta de instrumentação
+
+Antes de qualquer otimização, quero poder medir:
+
+TOTAL MIGRATION TIME
+
+e decompor em:
+
+Initial Run
++
+Batch Processing
++
+Agent Reasoning
++
+MCP / Browser
++
+Test Execution
++
+Retries
++
+Validation
++
+Orchestrator Overhead
++
+Idle / Waiting Time
+
+Também quero identificar:
+
+Time per test
+Time per successful adaptation
+Time per failed adaptation
+Time per discovered migration rule
+
+---
+
+# 20. Objetivo principal
+
+O objetivo NÃO é simplesmente fazer o Adapter terminar mais rápido.
+
+O objetivo é reduzir drasticamente o tempo de migração mantendo:
+
+* qualidade das adaptações;
+* estabilidade;
+* cobertura;
+* integridade da suíte da Colômbia;
+* qualidade da nova suíte do México;
+* capacidade de encontrar diferenças reais;
+* validação das alterações;
+* correção mínima;
+* rastreabilidade das mudanças.
+
+Quero especialmente evitar uma otimização que simplesmente faça o Agent "corrigir qualquer coisa até o teste passar".
+
+Um teste passar não significa necessariamente que a adaptação esteja correta.
+
+---
+
+# 21. Resultado esperado
+
+NÃO altere nada neste momento.
+
+Primeiro entregue um diagnóstico técnico estruturado contendo:
+
+1. Principais gargalos encontrados.
+2. Gargalos classificados como ALTO / MÉDIO / BAIXO.
+3. Estimativa do impacto de cada gargalo.
+4. Onde existe serialização desnecessária.
+5. Onde existe repetição de investigação.
+6. Onde existe repetição de contexto.
+7. Onde existem chamadas redundantes ao Gemini.
+8. Onde existem chamadas redundantes ao Playwright/MCP.
+9. Onde existem execuções redundantes dos testes.
+10. Onde existem retries/timeouts problemáticos.
+11. Onde existe overhead do Orchestrator.
+12. Onde existe oportunidade de paralelização.
+13. Onde existe oportunidade de agrupamento.
+14. Onde existe oportunidade de criar "migration knowledge".
+15. Onde existe oportunidade de pré-adaptação.
+16. Onde existem diferenças de país que poderiam ser detectadas antes da execução.
+17. Qual seria o tamanho de batch mais adequado.
+18. Qual seria a estratégia ideal de persistência de contexto.
+19. Qual seria a estratégia ideal de aprendizado incremental.
+20. Quais mudanças provavelmente dariam maior ganho de performance.
+
+Por fim, proponha uma arquitetura conceitual otimizada para o Adapter.
+
+NÃO implemente essa arquitetura ainda.
+
+Quero primeiro entender exatamente por que uma migração de aproximadamente 250 testes pode consumir quase 48 horas e quais mudanças poderiam reduzir esse tempo de forma significativa sem sacrificar a qualidade da adaptação.
