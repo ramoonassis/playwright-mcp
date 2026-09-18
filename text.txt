@@ -1,281 +1,521 @@
-Quero preparar uma apresentação técnica sobre o projeto atual de automação e healing de testes Playwright.
+You are a specialist in **technical presentations for technology leadership, software architecture, AI-powered engineering solutions, and Quality Engineering**.
 
-Preciso que você analise **o código-fonte, arquivos de configuração, documentação, prompts/diretrizes dos agentes, scripts e estrutura de pastas existentes no projeto** e produza um levantamento técnico baseado exclusivamente no que está implementado/documentado atualmente.
+I will provide you with the **real technical documentation of a project** containing information about a **Test Orchestrator** and a **Playwright Test Healer**.
 
-Não quero uma explicação genérica sobre agentes de IA ou Playwright. Quero entender e apresentar **a arquitetura real deste projeto**, com detalhes suficientes para uma apresentação técnica, mas sem entrar em explicações excessivamente profundas de implementação.
+Your task is to transform this documentation into a **short, visual, technically accurate, and professional presentation**, aimed at a technology leadership / software engineering audience.
 
-A apresentação terá dois slides principais:
+## LANGUAGE
 
-## SLIDE 1 — TEST ORCHESTRATOR
+The **entire presentation must be created in English**.
 
-Analise especificamente o Orchestrator e explique:
+This includes:
 
-1. **Objetivo**
+* Slide titles
+* Subtitles
+* Section headers
+* Bullet points
+* Technical labels
+* Architecture diagrams
+* Flow labels
+* Callouts
+* Speaker Notes
 
-   * Qual problema ele resolve?
-   * Em que cenário ele deve ser utilizado?
-   * Qual é a diferença entre simplesmente executar a suíte e utilizar o Orchestrator?
+Use **natural, concise, professional technical English**, suitable for a presentation to technology leadership.
 
-2. **Fluxo técnico**
-   Explique o fluxo completo, desde a seleção das pastas/testes até o resultado final.
-   Mostre, em ordem:
+Do not translate technical concepts literally when a more natural software-engineering term exists.
 
-   * como os testes são selecionados;
-   * como são executados;
-   * como as falhas são coletadas;
-   * como as falhas são analisadas/classificadas;
-   * como os testes são agrupados;
-   * como os batches/lotes são criados;
-   * como esses batches são preparados para o processo de healing;
-   * como o estado/progresso da execução é controlado;
-   * como retries, limites ou controles de execução funcionam, caso existam.
+Keep the wording concise and presentation-friendly. Avoid long paragraphs and overly academic language.
 
-3. **Estrutura técnica**
-   Identifique:
+The presentation should sound like it was created by a **QA / Software Engineering professional presenting a real technical POC**, not like generic AI-generated corporate content.
 
-   * principais arquivos envolvidos;
-   * scripts;
-   * módulos;
-   * funções/classes relevantes;
-   * arquivos de configuração;
-   * formatos de entrada e saída;
-   * arquivos temporários ou de estado;
-   * como os componentes se comunicam.
+Keep technical terms accurate to the actual implementation.
 
-Não precisa explicar cada função individualmente. Quero os componentes importantes para entender a arquitetura.
+---
 
-4. **Estratégia de batching**
-   Explique tecnicamente como o Orchestrator decide o agrupamento das falhas.
+# OBJECTIVE
 
-   Quero entender:
+The solution consists of two main components:
 
-   * quais informações são usadas para agrupar;
-   * se o agrupamento considera arquivo, erro, causa, spec, locator ou outros critérios;
-   * qual é a granularidade esperada dos batches;
-   * como um batch é estruturado;
-   * por que esse agrupamento é útil para o Healer;
-   * como isso reduz contexto/repetição e facilita o processo de diagnóstico.
+### 1. Test Orchestrator
 
-Importante: batches normalmente são utilizados com múltiplos testes por lote (por exemplo, 4–5 testes), então não trate batch size = 1 como comportamento normal, a menos que o código indique isso.
+The Orchestrator:
 
-5. **Integração com o Healer**
-   Explique exatamente como o Orchestrator prepara e encaminha o contexto para o processo de healing.
+* executes tests from the selected folders;
+* collects failed tests;
+* organizes and groups failures;
+* creates batches of failures;
+* prepares failure context for the healing process;
+* facilitates local execution and maintenance of large test suites.
 
-   Mostre a separação de responsabilidades:
+### 2. Playwright Test Healer
 
-   * o que pertence ao Orchestrator;
-   * o que pertence ao Healer;
-   * quais dados são passados entre eles.
+The Healer:
 
-6. **Controles e segurança**
-   Identifique mecanismos existentes para:
+* investigates test failures;
+* uses Playwright/MCP and available execution evidence;
+* analyzes the test and project context;
+* identifies the probable root cause;
+* proposes a correction;
+* generates a patch/proposal;
+* keeps a Human-in-the-Loop before changes are applied;
+* validates the solution after the change.
 
-   * limitar retries;
-   * controlar sessões/turnos;
-   * persistir estado;
-   * evitar execução desnecessária;
-   * controlar falhas;
-   * manter intervenção/aprovação humana quando aplicável.
+The presentation must clearly show that the **Orchestrator and Healer are connected but have different responsibilities**.
 
-7. **Pontos técnicos para destacar no slide**
-   No final, gere de 5 a 8 bullets curtos com os principais pontos técnicos que eu deveria colocar visualmente no slide.
+---
+
+# IMPORTANT CONTENT RULES
+
+The presentation must represent the **actual project implementation and documentation**.
+
+Do NOT:
+
+* invent features;
+* invent metrics;
+* invent architectural components;
+* invent workflows;
+* invent capabilities;
+* propose a new architecture instead of describing the existing one;
+* add generic AI/Playwright explanations that are not relevant to this project.
+
+Use the provided documentation as the primary source.
+
+If something cannot be confirmed from the documentation or implementation, explicitly state:
+
+**"Not confirmed in the current implementation/documentation."**
+
+If the documentation and implementation appear to contradict each other, highlight the discrepancy rather than choosing one silently.
+
+The goal is to explain:
+
+**What is it?**
+**Why does it exist?**
+**How does it work?**
+**What are the main technical decisions?**
+**How do the Orchestrator and Healer interact?**
+**Where is the human involved?**
+
+---
+
+# PRESENTATION STRUCTURE
+
+Create a presentation with **4 main slides**.
+
+---
+
+# SLIDE 1 — TEST ORCHESTRATOR
+
+Suggested title:
+
+**Test Orchestrator — Failure Execution & Batching**
+
+Use a short subtitle explaining that the Orchestrator organizes test execution and prepares failures for the healing process.
+
+## Layout
+
+Prefer a **3-column layout**.
+
+### COLUMN 1 — PURPOSE
+
+Explain visually:
+
+* What is the Orchestrator?
+* What problem does it solve?
+* When should it be used?
+* Why is organizing failures before healing useful?
+
+Use short bullets rather than paragraphs.
+
+### COLUMN 2 — HOW IT WORKS
+
+Create a visual execution flow, approximately:
+
+**Test Selection**
+↓
+**Test Execution**
+↓
+**Failure Collection**
+↓
+**Failure Analysis / Grouping**
+↓
+**Batch Creation**
+↓
+**Healing Input**
+
+Adapt the terminology to the actual implementation.
+
+This should be the most visual part of the slide.
+
+### COLUMN 3 — TECHNICAL DETAILS
+
+Show the most important technical details as concise bullets:
+
+* execution structure;
+* main files/modules;
+* batching strategy;
+* state management;
+* failure handling;
+* retries or execution limits, if implemented;
+* batch format;
+* information used for grouping;
+* integration with the Healer.
+
+Do not include irrelevant implementation details.
+
+## VISUAL CALLOUT
+
+Create a small highlighted section:
+
+**Why Batching?**
+
+Explain in 2–3 concise bullets that grouping related failures:
+
+* organizes the healing workload;
+* allows related failures to be processed together;
+* provides more focused context for the healing process;
+* avoids unnecessary isolated processing when appropriate.
+
+Only include claims supported by the project documentation.
+
+## FOOTER
+
+If consistent with the implementation, use:
+
+**Orchestrator = Execution + Failure Organization + Healing Preparation**
 
 ---
 
 # SLIDE 2 — PLAYWRIGHT TEST HEALER
 
-Agora analise especificamente o agente Healer e suas diretrizes/documentação.
+Suggested title:
 
-Quero uma explicação técnica de **como o agente pensa e trabalha durante o processo de healing**, baseada no agent `.md`, prompts, configurações e código realmente existente.
+**Playwright Test Healer — AI-Assisted Failure Diagnosis**
 
-Cubra:
+This should be the **most technically detailed slide** because the Healer is the core component of the solution.
 
-1. **Objetivo e responsabilidade**
+## Layout
 
-   * Qual problema o Healer resolve?
-   * O que ele recebe como entrada?
-   * O que ele deve produzir?
-   * O que ele NÃO deve fazer?
+Use three main areas.
 
-2. **Diretrizes do agente**
-   Extraia e organize as principais regras/instruções do agente.
+### COLUMN 1 — WHAT THE AGENT DOES
 
-   Principalmente:
+Explain:
 
-   * comportamento esperado;
-   * investigação antes de qualquer alteração;
-   * uso das ferramentas disponíveis;
-   * critérios para diagnóstico;
-   * tratamento de diferentes tipos de falha;
-   * validação;
-   * limites do agente;
-   * Human-in-the-Loop.
+* What is the Healer?
+* What problem does it solve?
+* What inputs does it receive?
+* What evidence does it analyze?
+* What output does it produce?
+* What are its boundaries?
 
-Não copie o `.md` inteiro. Transforme as diretrizes em uma explicação técnica estruturada.
+Show the high-level lifecycle:
 
-3. **Como o agente lê e entende o projeto**
-   Explique como ele utiliza:
+**Failure**
+→ **Investigation**
+→ **Root Cause**
+→ **Patch Proposal**
+→ **Validation**
 
-   * arquivos de teste;
-   * Page Objects;
-   * configurações;
-   * estrutura do projeto;
-   * evidências da execução;
-   * DOM/snapshot;
-   * URL/navegação;
-   * locators;
-   * console;
-   * network;
-   * estado da página;
-   * ferramentas Playwright/MCP;
-   * outros artefatos disponíveis.
+Adapt this flow according to the actual project.
 
-Explique a ordem lógica da investigação quando isso estiver definido na documentação/código.
+### COLUMN 2 — HOW THE AGENT INVESTIGATES
 
-4. **Processo de diagnóstico**
-   Descreva o ciclo técnico:
+Create a visual "context hub" with the Healer in the center and the relevant evidence sources around it.
 
-   failure
-   → investigação
-   → coleta de evidências
-   → identificação da causa raiz
-   → definição da correção
-   → geração da proposta
-   → aprovação humana
-   → aplicação
-   → validação
+Only include sources that actually exist in the project documentation, such as:
 
-   Ajuste esse fluxo caso o código/documentação atual tenha alguma diferença.
+* Test Spec
+* Page Objects
+* DOM / Snapshot
+* URL / Navigation
+* Locators
+* Console
+* Network
+* Page State
+* Playwright / MCP
+* Test Execution Evidence
+* Configuration / Project Context
 
-5. **Como o agente trata os erros**
-   Identifique os principais tipos de problema que ele consegue investigar, por exemplo:
+Explain briefly how these sources contribute to the investigation.
 
-   * locator/elemento alterado;
-   * URL/navigation;
-   * comportamento da página;
-   * timing/synchronization;
-   * conteúdo;
-   * outros casos realmente contemplados pelo projeto.
+### COLUMN 3 — AGENT GUIDELINES
 
-   Não invente categorias que não estejam presentes no projeto.
+Transform the agent's actual guidelines into concise technical bullets.
 
-6. **Regra de alteração de código**
-   Explique claramente o mecanismo atual de proposta de correção.
+Prioritize concepts such as:
 
-   É importante destacar que o agente **não deve editar diretamente os arquivos-fonte**.
+* investigate before modifying;
+* collect evidence before reaching a conclusion;
+* identify the root cause;
+* avoid unsupported assumptions;
+* use the available tools;
+* propose changes based on evidence;
+* do not directly edit source files;
+* generate a `.patch` or correction proposal according to the actual implementation;
+* require human review/approval;
+* apply and validate the approved change.
 
-   Explique:
+Adjust these points according to the actual agent documentation.
 
-   * como a correção é proposta;
-   * formato utilizado (`.patch` ou outro, conforme o projeto);
-   * onde a proposta é armazenada;
-   * como ocorre a revisão/aprovação humana;
-   * como a alteração é posteriormente aplicada;
-   * como a solução é validada.
+Do not simply copy the agent `.md`. Convert the guidelines into presentation-friendly technical concepts.
 
-7. **Arquitetura das ferramentas**
-   Identifique como o Gemini CLI, Playwright/Playwright MCP e o agente se relacionam.
+## VISUAL CALLOUT
 
-   Quero uma explicação simples da responsabilidade de cada camada.
+Create a highlighted section:
 
-8. **Como obter melhores resultados do agente**
-   Com base nas próprias diretrizes do projeto, explique:
+**Human-in-the-Loop**
 
-   * qual contexto deve ser fornecido;
-   * como apresentar uma falha;
-   * quais informações são importantes;
-   * como estruturar um pedido;
-   * quais comportamentos devem ser evitados;
-   * como o agente deve ser conduzido para produzir um diagnóstico confiável.
+With the following flow, adapted to the real implementation:
 
-Não quero "prompt engineering" genérico. Quero as melhores práticas específicas derivadas deste projeto.
+**Diagnosis**
+→ **Patch Proposal**
+→ **Human Approval**
+→ **Apply**
+→ **Validation**
 
-9. **Ganhos técnicos**
-   Identifique os ganhos observáveis ou esperados pela arquitetura atual, separando:
+This should be visually prominent because it represents an important control mechanism of the architecture.
 
-   * ganho de manutenção;
-   * ganho de investigação/diagnóstico;
-   * ganho de produtividade;
-   * ganho de organização das falhas;
-   * ganho de segurança/controle por Human-in-the-Loop.
+## FOOTER
 
-Não invente métricas. Se houver métricas/resultados registrados no projeto, apresente-os separadamente como resultados do POC.
+If consistent with the project, use:
 
-10. **Pontos técnicos para destacar no slide**
-    Gere de 6 a 10 bullets curtos, próprios para colocar visualmente no slide.
+**Healer = Investigation + Root-Cause Analysis + Controlled Remediation**
 
 ---
 
-# FORMATO DA RESPOSTA
+# SLIDE 3 — END-TO-END ARCHITECTURE
 
-Estruture a resposta exatamente nesta ordem:
+Suggested title:
 
-### 1. Executive technical summary
+**From Test Failure to Validated Fix**
 
-Um resumo curto da arquitetura completa.
+This slide should be **predominantly visual**.
 
-### 2. Slide 1 — Orchestrator
+Create an end-to-end architecture / pipeline showing the relationship between the Orchestrator and the Healer.
 
-* Objetivo
-* Fluxo
-* Arquitetura
-* Batching
-* Integração com Healer
-* Controles
-* 5–8 bullets finais para o slide
+Suggested flow:
 
-### 3. Slide 2 — Healer
+**Selected Test Folders**
+→
+**Orchestrator**
+→
+**Test Execution**
+→
+**Failure Collection**
+→
+**Failure Grouping / Batching**
+→
+**Healer**
+→
+**Playwright / MCP Investigation**
+→
+**Root Cause**
+→
+**Patch Proposal**
+→
+**Human Approval**
+→
+**Apply**
+→
+**Validation**
 
-* Objetivo
-* Diretrizes
-* Leitura de contexto
-* Diagnóstico
-* Tratamento de erros
-* Geração de patch/proposta
-* Human-in-the-Loop
-* Arquitetura das ferramentas
-* Como utilizar melhor
-* Ganhos
-* 6–10 bullets finais para o slide
+Adapt the flow if the real implementation differs.
 
-### 4. Technical architecture diagram description
+## RESPONSIBILITY BOUNDARIES
 
-Descreva em texto um diagrama que eu poderia transformar em uma imagem no PowerPoint, mostrando:
+Clearly distinguish the three main responsibility areas:
 
-Test Selection
-→ Orchestrator
-→ Test Execution
-→ Failure Collection
-→ Failure Grouping / Batching
-→ Healer
-→ Playwright/MCP Investigation
-→ Root Cause
-→ Patch Proposal
-→ Human Approval
-→ Apply
-→ Validation
+### Orchestrator
 
-Ajuste os componentes conforme a arquitetura real encontrada no projeto.
+**Execution + Failure Organization**
 
-### 5. Evidence from the project
+### Healer
 
-Para cada afirmação técnica importante, indique **qual arquivo, documentação, função ou componente do projeto comprova aquela informação**.
+**Investigation + Diagnosis + Remediation Proposal**
 
-Diferencie claramente:
+### Human
 
-* comportamento realmente implementado;
-* comportamento definido apenas nas diretrizes/documentação;
-* comportamento que é apenas uma possibilidade ou próximo passo.
+**Approval + Control**
 
-### Regras importantes
+Do not assign responsibilities that are not supported by the project.
 
-* Baseie-se no projeto atual, não em suposições.
-* Não invente funcionalidades.
-* Não proponha uma arquitetura nova; primeiro descreva a arquitetura existente.
-* Não altere nenhum arquivo.
-* Não sugira mudanças no agente durante esta análise.
-* Não remova nem simplifique nenhuma diretriz existente.
-* Se houver alguma inconsistência entre código e documentação, destaque explicitamente.
-* Se alguma informação não puder ser confirmada no projeto, escreva **"não confirmado no código/documentação"**.
-* Mantenha o nível técnico adequado para uma apresentação para liderança de tecnologia: arquitetura, fluxo, componentes, responsabilidades, regras e decisões técnicas, sem transformar a resposta em uma documentação de código linha a linha.
-* Dê preferência a diagramas textuais, fluxos e bullets que possam ser diretamente convertidos em slides.
+## VISUAL GOAL
+
+The audience should be able to understand the entire solution by looking at this slide for a few seconds.
+
+Use arrows, grouped stages, and clear visual separation between:
+
+**Execution → Diagnosis → Remediation → Validation**
+
+---
+
+# SLIDE 4 — HANDS-ON
+
+Suggested title:
+
+**Hands-on — Agent in Action**
+
+Keep this slide intentionally simple.
+
+Reserve approximately **70–80% of the slide for a video/demo**.
+
+Add a small visual flow:
+
+**Failure**
+→
+**Agent Investigation**
+→
+**Patch Proposal**
+→
+**Validation**
+
+Create a large placeholder:
+
+**[ VIDEO / LIVE DEMO ]**
+
+Do not overload this slide with technical content.
+
+The purpose of this slide is simply to transition from architecture/theory into the practical demonstration.
+
+---
+
+# VISUAL STYLE
+
+The presentation should look like a **modern engineering / AI architecture / developer tooling presentation**, rather than a generic corporate deck.
+
+Preferred characteristics:
+
+* modern;
+* clean;
+* technical;
+* professional;
+* strong visual hierarchy;
+* neutral or dark background;
+* readable typography;
+* generous whitespace;
+* cards;
+* architecture diagrams;
+* arrows;
+* technical icons where useful;
+* clear separation between components;
+* emphasis on workflows and responsibilities.
+
+Avoid:
+
+* stock photography;
+* decorative AI/robot imagery;
+* generic "AI future" visuals;
+* excessive gradients;
+* excessive emojis;
+* overly decorative elements;
+* huge blocks of text;
+* invented charts;
+* invented metrics;
+* unnecessary complexity.
+
+The visual language should communicate:
+
+**Engineering / Automation / AI Agents / Quality / Architecture**
+
+---
+
+# EDITABILITY
+
+If the tool supports generating **PowerPoint/PPTX**, prioritize **natively editable elements**.
+
+Whenever possible:
+
+* use editable text boxes;
+* use editable shapes;
+* use editable arrows;
+* use editable cards;
+* use editable diagrams;
+* use editable tables;
+* use editable labels.
+
+Do NOT turn an entire slide into a single image.
+
+Architecture diagrams should preferably be constructed using native shapes rather than flattened images.
+
+All titles, bullets, flow labels, cards, and callouts should remain editable whenever technically possible.
+
+If the tool does not support editable PPTX output, structure the design so that it can be easily recreated or edited later.
+
+---
+
+# SPEAKER NOTES
+
+For each slide, generate **Speaker Notes** containing approximately **30–60 seconds of speaking guidance**.
+
+The notes should:
+
+* complement the slide;
+* explain the technical concepts that should be spoken rather than written;
+* help explain architectural decisions;
+* avoid simply reading the bullets aloud;
+* use natural technical English.
+
+The tone should sound like a QA / Software Engineering professional presenting a POC they actually built.
+
+---
+
+# SOURCE TRACEABILITY
+
+For each slide, identify the **main project files, documentation sections, agent instructions, modules, or components** used as sources for the content.
+
+Create a small section at the end of the response called:
+
+**Technical Source Mapping**
+
+For example:
+
+**Slide 1**
+
+* `path/to/file`
+* `path/to/documentation`
+* `component/function`
+
+**Slide 2**
+
+* `path/to/agent.md`
+* `path/to/config`
+* `path/to/module`
+
+Only reference files/components that actually exist in the project.
+
+---
+
+# FINAL VALIDATION
+
+Before delivering the presentation, verify:
+
+1. Every technical claim is supported by the provided project documentation or implementation.
+2. No feature has been invented.
+3. No metric has been invented.
+4. The distinction between Orchestrator and Healer is clear.
+5. The Human-in-the-Loop mechanism is clearly represented.
+6. The batching strategy is accurately represented.
+7. The Healer's investigation process is accurately represented.
+8. The presentation is concise enough for a leadership meeting.
+9. The slides are visually structured rather than text-heavy.
+10. All visible content is in English.
+11. Technical terminology is natural and appropriate for software engineering.
+12. The presentation does not look like generic AI-generated content.
+
+---
+
+# FINAL OUTPUT
+
+Deliver:
+
+1. The **4-slide presentation**.
+2. The visual/content structure of each slide.
+3. **Speaker Notes** for each slide.
+4. The **Technical Source Mapping**.
+5. A one-sentence summary of the complete architecture.
+
+Do not create additional slides unless the provided documentation contains an important architectural concept that cannot reasonably fit into these four slides.
+
+If you believe an additional slide is genuinely necessary, explain why and propose it **before adding it**.
+
+I will now provide the technical documentation of the project. Use it as the source of truth for creating the presentation.
