@@ -1,233 +1,170 @@
-REDESIGN AND ENHANCE THE EXISTING TECHNICAL PRESENTATION
+REFINEMENT REQUEST — REDUCE TEXT DENSITY WITHOUT LOSING TECHNICAL CONTENT
 
-I already have a technical presentation about a Test Orchestrator and a Playwright Test Healer.
+Please refine the current presentation one more time.
 
-The current presentation has good technical content and structure, but its visual language is too futuristic, colorful, and "AI dashboard"-like.
+I am happy with the current visual direction, architecture, technical content, and overall structure.
 
-Your task is to:
+The remaining issue is TEXT DENSITY.
 
-1. Preserve and refine the existing technical content.
-2. Completely redesign the visual language into a minimal, premium enterprise technology style.
-3. Add one new slide focused on practical validation and results already achieved with the solution.
-4. Keep the final hands-on/demo slide.
-5. Keep everything in English.
+The slides currently contain too much explanatory text. They are technically correct, but some sections feel more like technical documentation than presentation slides.
 
-Do NOT rebuild the architecture from scratch.
-Do NOT invent technical capabilities.
-Do NOT invent metrics.
-Do NOT turn the presentation into a generic AI pitch.
+I want to keep the technical depth, but move more of the explanation from the slide itself to the speaker's verbal explanation.
 
-The goal is to present a real QA/Software Engineering POC to technology leadership.
+IMPORTANT:
 
-==================================================
-LANGUAGE
-==================================================
+Do NOT redesign the presentation from scratch.
 
-The entire presentation must be in English.
+Do NOT remove important technical concepts.
 
-This includes:
+Do NOT change the architecture.
 
-- titles;
-- subtitles;
-- section labels;
-- bullet points;
-- architecture diagrams;
-- technical labels;
-- callouts;
-- validation results;
-- speaker notes.
+Do NOT change the meaning of the technical information.
 
-Use natural, concise, professional technical English.
+Do NOT simplify the solution into generic statements.
 
-The presentation should sound like a QA / Software Engineering professional presenting a real engineering POC.
-
-Avoid marketing language and exaggerated claims.
+Instead, perform a CONTENT DENSITY REFINEMENT.
 
 ==================================================
-VISUAL DIRECTION
+CORE PRINCIPLE
 ==================================================
 
-Transform the current visual style from:
+The slide should be a VISUAL MAP of the explanation.
 
-"futuristic AI / cyber / neon dashboard"
+The presenter provides the detailed explanation verbally.
 
-into:
+The audience should be able to scan a slide in approximately 5–8 seconds and understand its main message.
 
-"premium enterprise software engineering / modern technology architecture".
+When choosing between:
 
-The presentation should feel appropriate for:
+MORE TEXT
+vs.
+MORE WHITESPACE
 
-- Technology Leadership
-- Engineering Managers
-- Software Architects
-- Senior QA / SDET professionals
+PREFER MORE WHITESPACE.
 
-Think of the visual quality of modern engineering presentations from companies such as:
+When choosing between:
 
-- GitHub
-- Microsoft
-- Linear
-- Vercel
-- Stripe
+LONG EXPLANATION
+vs.
+SHORT TECHNICAL PHRASE
 
-Do NOT copy their branding.
-
-Use the general principles:
-
-- clean typography;
-- strong hierarchy;
-- generous whitespace;
-- restrained color;
-- precise alignment;
-- subtle borders;
-- simple technical diagrams;
-- editorial layout;
-- technical credibility.
+PREFER THE SHORT TECHNICAL PHRASE.
 
 ==================================================
-COLOR SYSTEM
+TEXT STYLE
 ==================================================
 
-Use a restrained color palette.
+Use:
 
-Preferred:
+- short labels;
+- short phrases;
+- keywords;
+- technical identifiers;
+- arrows;
+- diagrams;
+- concise relationships.
 
-Background:
-- white;
-- off-white;
-- very light neutral gray.
+Avoid:
 
-Primary text:
-- dark graphite;
-- near-black.
+- paragraphs;
+- long explanatory bullets;
+- full sentences when they are not necessary;
+- repeated explanations;
+- marketing-style descriptions;
+- documentation-style wording.
 
-Secondary text:
-- medium gray.
+A good content block should ideally contain:
 
-Primary accent:
-- ONE blue tone.
+LABEL
++
+ONE SHORT SUPPORTING PHRASE
 
-Use additional colors ONLY when they have semantic meaning:
+For example:
 
-- green = successful validation;
-- red = failure/error;
-- yellow = warning, only when necessary.
+Instead of:
 
-Avoid using multiple accent colors for decoration.
+"Triage Automation: Eliminates developer toil in analyzing repetitive suite failures and selector breakages."
 
-Remove or heavily reduce:
+Use:
 
-- neon cyan;
-- neon purple;
-- glowing green;
-- glowing yellow;
-- strong blue/purple gradients;
-- glowing borders.
+**Triage automation**
+Automated failure analysis
 
-==================================================
-REMOVE THE "AI DASHBOARD" LOOK
-==================================================
+Instead of:
 
-This is extremely important.
+"Operational Context: Engineered for unattended nightly CI/CD regression runs and local pre-commit verification."
 
-Do NOT use:
+Use:
 
-- neon glow;
-- futuristic lighting;
-- luminous cards;
-- heavy gradients;
-- excessive shadows;
-- glowing outlines;
-- cyber-security aesthetics;
-- gaming UI aesthetics;
-- decorative AI/robot imagery.
+**CI / Local**
+Nightly + pre-commit execution
 
-Cards should feel like clean information containers.
+Instead of:
 
-Prefer:
+"Beyond Static Reports: Transcends Allure's HTML logs by parsing raw failure traces into stateful resumable batches."
 
-- thin gray borders;
-- subtle shadows;
-- flat backgrounds;
-- whitespace;
-- clean alignment.
+Use:
 
-When in doubt, REMOVE a visual element rather than ADD one.
+**Actionable failures**
+Raw traces → resumable batches
 
-Modern does NOT mean more effects.
+Instead of:
 
-Modern means:
+"Context Efficiency: Eliminates duplicate file reads and redundant AI passes by grouping co-located failures."
 
-LESS decoration.
-BETTER typography.
-BETTER spacing.
-BETTER hierarchy.
-FEWER colors.
-CLEANER diagrams.
-STRONGER technical communication.
+Use:
+
+**Context efficiency**
+Grouped failures → focused context
 
 ==================================================
-PRESERVE THE EXISTING CONTENT
+STRICT DENSITY RULES
 ==================================================
 
-I am satisfied with the current technical information and overall structure.
+Apply these constraints wherever possible:
 
-Keep:
+- Maximum 4 content blocks per column.
+- Maximum 2 lines of supporting text per content block.
+- Prefer 3–8 words for supporting phrases.
+- Avoid bullets longer than approximately 8–12 words.
+- Do not use paragraphs inside cards.
+- Do not repeat information already represented visually.
+- Do not explain a diagram in a paragraph if the diagram can communicate it.
+- Use technical keywords instead of prose when possible.
 
-- Orchestrator architecture;
-- execution flow;
-- batching concept;
-- technical modules;
-- failure organization;
-- Healer scope;
-- Playwright MCP;
-- investigation process;
-- agent guidelines;
-- Human-in-the-Loop;
-- patch proposal;
-- validation flow;
-- responsibilities of each component.
-
-You may improve wording for clarity and shorten redundant text.
-
-Do NOT remove important technical information simply to make the slides prettier.
-
-Remove decorative/redundant content first if space is limited.
-
-Do NOT invent:
-
-- features;
-- metrics;
-- architecture components;
-- performance claims;
-- automation capabilities;
-- success rates.
+If a technical concept requires more explanation, keep the short version on the slide and move the detailed explanation into the SPEAKER NOTES.
 
 ==================================================
-SLIDE STRUCTURE
+ORCHESTRATOR SLIDE
 ==================================================
 
-Create a final presentation with 5 slides.
-
-------------------------------------------
-SLIDE 1 — TEST ORCHESTRATOR
-------------------------------------------
-
-Title:
-
-Test Orchestrator — Failure Execution & Batching
-
-Keep the current 3-column structure:
+For the Orchestrator slide, reduce the text in:
 
 01 — PURPOSE
 
+Convert the current explanatory bullets into concise concepts such as:
+
+**Triage automation**
+Automated failure analysis
+
+**CI / Local**
+Nightly + pre-commit execution
+
+**Actionable failures**
+Raw traces → failure batches
+
+**Context efficiency**
+Grouped failures → focused context
+
+Use the actual project terminology where appropriate.
+
+For:
+
 02 — EXECUTION FLOW
 
-03 — TECHNICAL DETAILS
+Prioritize the visual flow over explanatory text.
 
-Make the execution flow the visual centerpiece.
-
-Use a clean flow such as:
+Use something similar to:
 
 SELECT
 →
@@ -241,435 +178,274 @@ BATCH
 →
 DISPATCH
 
-Adapt the exact terminology to the actual implementation.
+Each stage should have at most a very short supporting label.
 
-Technical details should include the important modules, state handling, execution controls, batching strategy, and integration with the Healer.
+For:
 
-Keep the "Why Batching?" concept, but redesign it as a subtle technical callout.
+03 — TECHNICAL DETAILS
 
-The slide should communicate:
+Prefer compact technical references:
 
-Orchestrator = Execution + Failure Organization + Healing Preparation
+**Core modules**
+`runner.ts` · `batcher.ts` · `state.ts`
 
-without relying on decorative effects.
+**Execution**
+Playwright · CLI · retry control
 
-------------------------------------------
-SLIDE 2 — PLAYWRIGHT TEST HEALER
-------------------------------------------
+**State**
+Resumable execution
 
-Title:
+**Context**
+Shared cure memory
 
-Playwright Test Healer — AI-Assisted Failure Diagnosis
+**Output**
+Structured healing batches
 
-Keep the technical content.
+Only include components that actually exist in the project.
 
-Use three areas:
+==================================================
+HEALER SLIDE
+==================================================
 
-01 — AGENT SCOPE & BOUNDARIES
+Apply the same principle.
 
-02 — PLAYWRIGHT MCP / INVESTIGATION
+Instead of explaining the entire agent lifecycle in prose, show:
 
-03 — GUIDELINES & CONTROL
-
-Show the investigation lifecycle:
-
-Failure
+**Failure**
 →
-Investigation
+**Investigation**
 →
-Root Cause
+**Root Cause**
 →
-Patch Proposal
+**Patch**
 →
-Validation
+**Validation**
 
-Represent the Playwright MCP tools/evidence sources as a clean technical architecture rather than a colorful dashboard.
+For agent scope, prefer:
 
-Keep the Human-in-the-Loop mechanism visually important:
+**Input**
+Batch + test + failure
 
-Diagnosis
+**Investigation**
+Static code + live browser
+
+**Output**
+RCA + patch proposal
+
+**Boundary**
+Read-only by default
+
+Adapt these to the actual implementation.
+
+For Playwright MCP, prioritize the tools visually:
+
+**Navigate**
+**Snapshot**
+**Locator**
+**Console**
+**Network**
+
+Then use one concise statement:
+
+**Static context + live evidence**
+
+Do not add long descriptions for every tool.
+
+For the guidelines section, use short concepts such as:
+
+**Evidence first**
+Investigate before changing
+
+**Root cause**
+Validate before proposing
+
+**Controlled remediation**
+Patch → approval → apply
+
+Only use concepts actually supported by the agent documentation.
+
+==================================================
+HUMAN-IN-THE-LOOP
+==================================================
+
+Make the Human-in-the-Loop process visual rather than textual.
+
+Prefer:
+
+**Diagnose**
 →
-Patch Proposal
+**Propose**
 →
-Human Approval
+**Approve**
 →
-Apply
+**Apply**
 →
-Re-test
+**Re-test**
 
-Use subtle visual emphasis for "Human Approval".
+Highlight:
 
-------------------------------------------
-SLIDE 3 — END-TO-END ARCHITECTURE
-------------------------------------------
+**Human Approval**
 
-Title:
+Do not explain this process with a paragraph.
 
-From Test Failure to Validated Fix
+==================================================
+END-TO-END ARCHITECTURE SLIDE
+==================================================
 
-Make this slide highly visual.
+Make this slide almost entirely visual.
 
-Show:
+Use:
 
 Test Selection
 →
 Orchestrator
 →
-Test Execution
+Execution
 →
-Failure Collection
-→
-Failure Grouping / Batching
+Failure Grouping
 →
 Healer
 →
 Investigation
 →
-Root Cause
-→
-Patch Proposal
+Patch
 →
 Human Approval
 →
-Apply
-→
 Validation
 
-Clearly separate the responsibilities:
+Use short labels for responsibility boundaries.
 
-ORCHESTRATOR
+For example:
+
+**ORCHESTRATOR**
 Execution + Failure Organization
 
-HEALER
-Investigation + Diagnosis + Remediation Proposal
+**HEALER**
+Investigation + Remediation
 
-HUMAN
+**HUMAN**
 Approval + Control
 
-Use subtle background zones or separators.
-
-Do not use excessive colors.
-
-------------------------------------------
-SLIDE 4 — VALIDATION & PRACTICAL RESULTS
-------------------------------------------
-
-THIS IS A NEW SLIDE.
-
-Title:
-
-Validation — From POC to Practical Application
-
-Subtitle:
-
-Observed use cases during the solution's internal maturation
-
-The purpose of this slide is to demonstrate that the solution has already been exercised against real testing problems.
-
-Do NOT present this as a finalized product or statistically validated production system.
-
-Present these as:
-
-- practical validations;
-- observed results;
-- real use cases;
-- evidence gathered during the POC/maturation period.
-
-Use 2 or 3 main validation areas.
-
-### VALIDATION 01 — PIPELINE FAILURE RECOVERY
-
-Show that the agent was used to investigate and repair broken tests in the Colombia test pipelines.
-
-Possible structure:
-
-PROBLEM
-Broken / failing automated tests
-
-↓
-
-AGENT
-Failure investigation + root-cause analysis + controlled correction
-
-↓
-
-RESULT
-High observed accuracy in test correction and identification of flaky tests
-
-IMPORTANT:
-Only use quantitative accuracy numbers if they are explicitly provided in the documentation.
-
-If no numerical metric is available, use wording such as:
-
-"High observed accuracy during the evaluated test set"
-
-rather than inventing a percentage.
-
-Also highlight that the agent was able to distinguish maintenance-related failures and identify flaky-test behavior where supported by the evidence.
-
-### VALIDATION 02 — CROSS-COUNTRY TEST ADAPTATION
-
-Show the Colombia → Mexico use case.
-
-Explain:
-
-SOURCE
-Existing Colombia automation suite
-
-↓
-
-TARGET
-Mexico environment / test context
-
-↓
-
-AGENT
-Adapted directives used to identify required test adjustments
-
-↓
-
-RESULT
-Existing test coverage could be adapted to the Mexico context with reduced manual effort, particularly for simple element and context-level changes.
-
-The key message should be:
-
-The existing automation codebase could be reused as a starting point instead of rebuilding the test suite from scratch.
-
-IMPORTANT:
-Do not claim full automation of the migration unless the documentation explicitly supports it.
-
-Use language such as:
-
-"Accelerated test adaptation"
-
-or
-
-"Reduced manual effort for cross-country test adaptation"
-
-rather than:
-
-"Fully automated migration"
-
-unless that is explicitly proven.
-
-### OPTIONAL VALIDATION 03
-
-If the documentation contains another meaningful real-world validation, add a third card.
-
-Otherwise, keep only the two documented use cases above.
-
-### VISUAL DESIGN
-
-This slide should NOT look like a generic KPI dashboard.
-
-Do NOT create invented charts.
-
-Instead, use two clean case-study cards:
-
-01
-COLOMBIA PIPELINE RECOVERY
-
-02
-COLOMBIA → MEXICO ADAPTATION
-
-Each card should have:
-
-Context
-→
-Agent Application
-→
-Observed Outcome
-
-At the bottom, add a restrained callout:
-
-"Validated through practical use during internal POC maturation"
-
-Only if this accurately reflects the documentation.
-
-The slide should communicate:
-
-The solution has moved beyond a conceptual architecture and has already been exercised against real automation-maintenance and test-adaptation scenarios.
-
-------------------------------------------
-SLIDE 5 — HANDS-ON
-------------------------------------------
-
-Title:
-
-Hands-on — Agent in Action
-
-Keep this slide extremely clean.
-
-The main element should be a large video/demo placeholder.
-
-Add only a small supporting flow:
-
-Failure
-→
-Investigation
-→
-Patch
-→
-Validation
-
-The video should occupy approximately 70–80% of the slide.
-
-Do not overload this slide.
+Do not add explanatory paragraphs.
 
 ==================================================
-VISUAL HIERARCHY
+VALIDATION / RESULTS SLIDE
 ==================================================
 
-Every slide should have:
+Keep the practical validation content, but make it concise.
 
-1. One clear main message.
-2. One dominant visual element.
-3. Supporting technical information.
-4. Minimal decorative content.
+For the Colombia pipeline case:
 
-The audience should understand the main idea within approximately five seconds.
+**01 — PIPELINE RECOVERY**
 
-The slide should support the presenter rather than force the audience to read everything.
+**Context**
+Broken automation
 
-==================================================
-TYPOGRAPHY
-==================================================
+**Agent**
+Failure analysis + healing
 
-Use a clean modern sans-serif font.
+**Observed**
+High correction accuracy + flaky identification
 
-Prioritize:
+Only include quantitative metrics if they are explicitly documented.
 
-- strong title hierarchy;
-- readable body text;
-- consistent font sizes;
-- restrained bold usage.
+For Colombia → Mexico:
 
-Use monospace typography only where appropriate for:
+**02 — CROSS-COUNTRY ADAPTATION**
 
-- filenames;
-- CLI commands;
-- code;
-- technical identifiers.
+**Source**
+Colombia test suite
 
-==================================================
-EDITABILITY
-==================================================
+**Target**
+Mexico environment
 
-If generating PPTX:
+**Agent**
+Context-specific test adaptation
 
-Keep all elements editable whenever possible.
+**Observed**
+Reduced manual effort for simple adjustments
 
-Use:
-
-- editable text;
-- editable shapes;
-- editable arrows;
-- editable diagrams;
-- editable cards;
-- editable lines.
-
-Do NOT flatten the slides into images.
-
-Do NOT convert architecture diagrams into one large image.
-
-==================================================
-TECHNICAL ACCURACY
-==================================================
-
-Before finalizing:
-
-Verify every technical claim against the provided project documentation.
-
-Distinguish between:
-
-IMPLEMENTED
-Documented and present in the project.
-
-OBSERVED
-Validated through practical use.
-
-EXPECTED
-A potential benefit that has not been formally measured.
-
-Do not present an expected benefit as an observed result.
-
-Do not invent metrics.
-
-Do not invent success rates.
-
-Do not exaggerate the maturity of the solution.
-
-The Colombia pipeline recovery and Colombia → Mexico adaptation should be presented as practical validation/use cases during the POC's internal maturation period.
+Again, do not claim full migration automation unless explicitly supported.
 
 ==================================================
 SPEAKER NOTES
 ==================================================
 
-For each slide, create 30–60 seconds of speaker notes.
+IMPORTANT:
 
-The notes should explain:
+Move detailed explanations into the Speaker Notes.
 
-- what the audience should understand;
-- important technical context;
-- why the architecture was designed this way;
-- what the practical validation demonstrates.
+The slide should contain the concise version.
 
-Do not simply repeat the slide bullets.
+The speaker notes should contain the explanation I can give verbally.
 
-Use natural technical English.
+For example:
+
+SLIDE:
+**Actionable failures**
+Raw traces → resumable batches
+
+SPEAKER NOTE:
+"The Orchestrator goes beyond simply exposing the failure through a static report. It extracts the failure information and organizes related failures into batches that can be processed by the healing workflow and resumed when necessary."
+
+Use this principle throughout the presentation.
+
+The notes can be significantly more detailed than the slide.
 
 ==================================================
-FINAL QUALITY BAR
+VISUAL PRIORITY
 ==================================================
 
-Before delivering the presentation, verify:
+The visual hierarchy should be:
 
-- Is the technical content preserved?
-- Is the architecture accurate?
-- Is the Orchestrator clearly separated from the Healer?
-- Is Human-in-the-Loop clearly represented?
-- Is batching clearly explained?
-- Is the Healer investigation process clear?
-- Are practical validations clearly separated from theoretical benefits?
-- Are the Colombia pipeline results represented accurately?
-- Is the Colombia → Mexico adaptation represented accurately?
-- Are there no invented metrics?
-- Are there no exaggerated claims?
-- Is the visual design minimal?
-- Are the neon/glow effects gone?
-- Is there only one primary accent color?
-- Is there enough whitespace?
-- Does it look like enterprise engineering rather than a futuristic AI dashboard?
-- Is the presentation sophisticated enough for technology leadership?
-- Are the diagrams easy to understand?
-- Are the slides editable?
+1. Main message
+2. Architecture / flow
+3. Short technical labels
+4. Supporting details
 
-The final visual impression should be:
+NOT:
+
+1. Large blocks of text
+2. Decorative elements
+3. Secondary information
+
+Use whitespace as an active design element.
+
+==================================================
+FINAL CHECK
+==================================================
+
+Before delivering the revised presentation, perform a text-density review.
+
+For every slide, ask:
+
+"Can I understand the main idea in 5–8 seconds?"
+
+"Could this sentence be reduced to a technical phrase?"
+
+"Can this explanation be moved to Speaker Notes?"
+
+"Is this text duplicating something already shown visually?"
+
+"If I remove this sentence, do I lose technical meaning?"
+
+If the answer is no, remove it.
+
+The final presentation should feel:
+
+TECHNICAL
+BUT NOT TEXT-HEAVY.
+
+DETAILED
+BUT NOT DOCUMENTATION-LIKE.
 
 PRECISE
-CLEAN
-TECHNICAL
-MATURE
-PREMIUM
-ENTERPRISE
+BUT NOT VERBOSE.
 
-Not:
+VISUAL
+BUT NOT DECORATIVE.
 
-NEON
-CYBER
-SCI-FI
-AI MARKETING
+The presenter should provide the depth.
 
-==================================================
-FINAL OUTPUT
-==================================================
-
-Deliver:
-
-1. The redesigned 5-slide presentation.
-2. Speaker Notes for every slide.
-3. Technical Source Mapping.
-4. A one-sentence summary of the architecture.
-5. A short validation summary explaining which practical results are documented/observed and which are only expected benefits.
-
-Preserve the strong technical content already present and focus the redesign on clarity, visual sophistication, technical credibility, and practical evidence.
+The slide should provide the structure.
