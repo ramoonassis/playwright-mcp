@@ -1,451 +1,782 @@
-REFINEMENT REQUEST — REDUCE TEXT DENSITY WITHOUT LOSING TECHNICAL CONTENT
+Você é um engenheiro de QA Automation responsável por refatorar e padronizar a suíte de Smoke Tests da automação E2E deste projeto.
 
-Please refine the current presentation one more time.
+## OBJETIVO
 
-I am happy with the current visual direction, architecture, technical content, and overall structure.
+Refatorar os Smoke Tests de todos os mercados:
 
-The remaining issue is TEXT DENSITY.
+* Brasil (BRA)
+* México (MEX)
+* Consul México (CONSULMEX)
+* Argentina (ARG)
+* Colômbia (COL)
 
-The slides currently contain too much explanatory text. They are technically correct, but some sections feel more like technical documentation than presentation slides.
+A nova implementação deve substituir o modelo monolítico/fragilizado atual por uma abordagem **modular, atômica, rápida, determinística e específica para Smoke Tests**.
 
-I want to keep the technical depth, but move more of the explanation from the slide itself to the speaker's verbal explanation.
+O objetivo dos Smoke Tests NÃO é cobrir profundamente as regras de negócio.
 
-IMPORTANT:
+Eles devem funcionar como um **"heartbeat" da aplicação**, respondendo rapidamente:
 
-Do NOT redesign the presentation from scratch.
+> "O site está vivo e os principais caminhos críticos estão funcionando?"
 
-Do NOT remove important technical concepts.
+---
 
-Do NOT change the architecture.
+# 1. PRINCÍPIO FUNDAMENTAL
 
-Do NOT change the meaning of the technical information.
+NÃO reutilize simplesmente os `specs` de Feature existentes adicionando uma tag `smoke`.
 
-Do NOT simplify the solution into generic statements.
+Os testes de Feature e os Smoke Tests têm objetivos diferentes.
 
-Instead, perform a CONTENT DENSITY REFINEMENT.
+### Feature Tests
 
-==================================================
-CORE PRINCIPLE
-==================================================
+Devem continuar responsáveis por:
 
-The slide should be a VISUAL MAP of the explanation.
+* regras detalhadas de negócio;
+* cenários positivos e negativos;
+* casos de borda;
+* diferentes combinações de dados;
+* validações detalhadas;
+* maior profundidade funcional.
 
-The presenter provides the detailed explanation verbally.
+### Smoke Tests
 
-The audience should be able to scan a slide in approximately 5–8 seconds and understand its main message.
+Devem ser responsáveis por:
 
-When choosing between:
+* validar disponibilidade;
+* validar renderização;
+* validar os principais caminhos críticos;
+* detectar rapidamente regressões graves;
+* possuir poucas etapas;
+* possuir o mínimo possível de dependências;
+* evitar etapas intermediárias desnecessárias;
+* serem rápidos e determinísticos.
 
-MORE TEXT
-vs.
-MORE WHITESPACE
+Portanto:
 
-PREFER MORE WHITESPACE.
+**Use os Feature Tests como fonte de conhecimento e cobertura existente, mas crie cenários Smoke próprios e dedicados.**
 
-When choosing between:
+---
 
-LONG EXPLANATION
-vs.
-SHORT TECHNICAL PHRASE
+# 2. PRIMEIRO PASSO — NÃO ALTERAR NADA
 
-PREFER THE SHORT TECHNICAL PHRASE.
+Antes de modificar qualquer arquivo, faça uma análise completa da estrutura atual.
 
-==================================================
-TEXT STYLE
-==================================================
+Mapeie:
 
-Use:
+* pasta atual de Smoke Tests;
+* `home.spec.ts`;
+* `PDP.spec.ts`;
+* pasta/arquivos de checkout;
+* Page Objects utilizados;
+* fixtures;
+* test data;
+* configuração por mercado;
+* configurações de URL;
+* configurações de ambiente;
+* tags existentes;
+* IDs de testes existentes;
+* configuração atual da pipeline;
+* qualquer mecanismo atual de seleção de Smoke Tests.
 
-- short labels;
-- short phrases;
-- keywords;
-- technical identifiers;
-- arrows;
-- diagrams;
-- concise relationships.
+Também identifique se existem diferenças de implementação entre:
 
-Avoid:
+* BRA
+* MEX
+* CONSULMEX
+* ARG
+* COL
 
-- paragraphs;
-- long explanatory bullets;
-- full sentences when they are not necessary;
-- repeated explanations;
-- marketing-style descriptions;
-- documentation-style wording.
+Não faça alterações durante essa etapa.
 
-A good content block should ideally contain:
+Primeiro compreenda a arquitetura existente.
 
-LABEL
-+
-ONE SHORT SUPPORTING PHRASE
+---
 
-For example:
+# 3. MAPEAMENTO DOS CENÁRIOS EXISTENTES
 
-Instead of:
+Depois da análise estrutural, examine os testes existentes de:
 
-"Triage Automation: Eliminates developer toil in analyzing repetitive suite failures and selector breakages."
+### Home
 
-Use:
+`home.spec.ts`
 
-**Triage automation**
-Automated failure analysis
+Identifique quais cenários realmente comprovam que a Home está disponível e funcional.
 
-Instead of:
+Priorize:
 
-"Operational Context: Engineered for unattended nightly CI/CD regression runs and local pre-commit verification."
+* carregamento da Home;
+* elementos essenciais;
+* disponibilidade da página;
+* navegação crítica, quando necessária;
+* ausência de dependências desnecessárias.
 
-Use:
+Não copie automaticamente todos os cenários.
 
-**CI / Local**
-Nightly + pre-commit execution
+Selecione apenas o que possui valor como Smoke.
 
-Instead of:
+---
 
-"Beyond Static Reports: Transcends Allure's HTML logs by parsing raw failure traces into stateful resumable batches."
+### PDP / Catalog
 
-Use:
+`PDP.spec.ts`
 
-**Actionable failures**
-Raw traces → resumable batches
+Identifique os cenários capazes de validar:
 
-Instead of:
+* acesso à PDP;
+* carregamento da PDP;
+* renderização dos elementos essenciais;
+* disponibilidade de produto;
+* informações mínimas necessárias;
+* interação essencial para prosseguir para compra, quando aplicável.
 
-"Context Efficiency: Eliminates duplicate file reads and redundant AI passes by grouping co-located failures."
+O Smoke deve validar **PDP Rendering**, e não reproduzir toda a cobertura funcional existente na PDP.
 
-Use:
+---
 
-**Context efficiency**
-Grouped failures → focused context
+### Checkout
 
-==================================================
-STRICT DENSITY RULES
-==================================================
+Analise todos os arquivos existentes dentro da pasta:
 
-Apply these constraints wherever possible:
+`/checkout`
 
-- Maximum 4 content blocks per column.
-- Maximum 2 lines of supporting text per content block.
-- Prefer 3–8 words for supporting phrases.
-- Avoid bullets longer than approximately 8–12 words.
-- Do not use paragraphs inside cards.
-- Do not repeat information already represented visually.
-- Do not explain a diagram in a paragraph if the diagram can communicate it.
-- Use technical keywords instead of prose when possible.
+Identifique o menor conjunto de ações necessário para provar que o checkout está viável.
 
-If a technical concept requires more explanation, keep the short version on the slide and move the detailed explanation into the SPEAKER NOTES.
+Priorize:
 
-==================================================
-ORCHESTRATOR SLIDE
-==================================================
+* entrada no checkout;
+* carregamento;
+* componentes críticos;
+* avanço de etapas essenciais;
+* validações mínimas necessárias para demonstrar viabilidade.
 
-For the Orchestrator slide, reduce the text in:
+Evite reproduzir fluxos completos e detalhados que já pertencem aos Feature Tests.
 
-01 — PURPOSE
+---
 
-Convert the current explanatory bullets into concise concepts such as:
+# 4. NOVA ESTRUTURA
 
-**Triage automation**
-Automated failure analysis
+O Smoke deve seguir uma arquitetura modular baseada em três pilares:
 
-**CI / Local**
-Nightly + pre-commit execution
+```text
+Smoke
+├── Home Availability
+├── Catalog PDP Rendering
+└── Checkout Viability
+```
 
-**Actionable failures**
-Raw traces → failure batches
+A implementação esperada é baseada em um arquivo semelhante a:
 
-**Context efficiency**
-Grouped failures → focused context
+```text
+smoke/
+└── modular.spec.ts
+```
 
-Use the actual project terminology where appropriate.
+ou na estrutura equivalente já utilizada pelo projeto.
 
-For:
+O arquivo deve ser responsável por organizar os três pilares, mantendo os testes:
 
-02 — EXECUTION FLOW
+* independentes;
+* pequenos;
+* atômicos;
+* fáceis de diagnosticar;
+* rápidos;
+* específicos para Smoke.
 
-Prioritize the visual flow over explanatory text.
+Não transforme `modular.spec.ts` em um novo arquivo monolítico gigante.
 
-Use something similar to:
+Se necessário, utilize helpers, fixtures ou módulos auxiliares para manter a separação de responsabilidades.
 
-SELECT
-→
-EXECUTE
-→
-EXTRACT
-→
-GROUP
-→
-BATCH
-→
-DISPATCH
+---
 
-Each stage should have at most a very short supporting label.
+# 5. HOME AVAILABILITY
 
-For:
+Criar Smoke Tests específicos para validar a disponibilidade da Home.
 
-03 — TECHNICAL DETAILS
+O teste deve responder essencialmente:
 
-Prefer compact technical references:
+> A Home deste mercado está acessível e renderizando o mínimo necessário?
 
-**Core modules**
-`runner.ts` · `batcher.ts` · `state.ts`
+Evite:
 
-**Execution**
-Playwright · CLI · retry control
+* navegar por múltiplas páginas sem necessidade;
+* executar regras de negócio;
+* validar conteúdo detalhado;
+* realizar ações que não sejam necessárias para provar disponibilidade.
 
-**State**
-Resumable execution
+O teste deve falhar rapidamente quando a Home estiver indisponível ou quebrada.
 
-**Context**
-Shared cure memory
+---
 
-**Output**
-Structured healing batches
+# 6. CATALOG / PDP RENDERING
 
-Only include components that actually exist in the project.
+Criar Smoke Tests específicos para validar a PDP.
 
-==================================================
-HEALER SLIDE
-==================================================
+O objetivo é responder:
 
-Apply the same principle.
+> Consigo acessar uma PDP válida e os elementos fundamentais da página estão sendo renderizados?
 
-Instead of explaining the entire agent lifecycle in prose, show:
+Utilize um produto/SKU especificamente adequado para Smoke.
 
-**Failure**
-→
-**Investigation**
-→
-**Root Cause**
-→
-**Patch**
-→
-**Validation**
+Não dependa de:
 
-For agent scope, prefer:
+* busca complexa;
+* navegação extensa pelo catálogo;
+* dados que possam desaparecer;
+* produtos aleatórios;
+* etapas intermediárias desnecessárias.
 
-**Input**
-Batch + test + failure
+Sempre que a arquitetura permitir, prefira acesso direto/deep link à PDP.
 
-**Investigation**
-Static code + live browser
+---
 
-**Output**
-RCA + patch proposal
+# 7. CHECKOUT VIABILITY
 
-**Boundary**
-Read-only by default
+Criar Smoke Tests específicos para validar que o checkout está funcional.
 
-Adapt these to the actual implementation.
+O objetivo é responder:
 
-For Playwright MCP, prioritize the tools visually:
+> Um usuário consegue chegar ao checkout através do caminho mínimo necessário e o checkout está operacional?
 
-**Navigate**
-**Snapshot**
-**Locator**
-**Console**
-**Network**
+Utilize os arquivos existentes na pasta `/checkout` como referência para entender:
 
-Then use one concise statement:
+* Page Objects;
+* locators;
+* etapas;
+* dados;
+* validações;
+* comportamento esperado.
 
-**Static context + live evidence**
+Entretanto, NÃO copie um Feature Test inteiro.
 
-Do not add long descriptions for every tool.
+Crie o caminho mínimo necessário para validar a viabilidade do checkout.
 
-For the guidelines section, use short concepts such as:
+---
 
-**Evidence first**
-Investigate before changing
+# 8. TEST DATA
 
-**Root cause**
-Validate before proposing
+Smoke Tests devem utilizar dados **determinísticos e controlados**.
 
-**Controlled remediation**
-Patch → approval → apply
+Um problema crítico a ser evitado é:
 
-Only use concepts actually supported by the agent documentation.
+> Smoke falhar simplesmente porque um SKU ficou sem estoque ou deixou de existir.
 
-==================================================
-HUMAN-IN-THE-LOOP
-==================================================
+Portanto:
 
-Make the Human-in-the-Loop process visual rather than textual.
+* identifique os SKUs atualmente utilizados pelos mercados;
+* identifique quais possuem disponibilidade garantida;
+* utilize dados próprios para Smoke sempre que possível;
+* evite produtos escolhidos dinamicamente quando isso introduzir instabilidade;
+* evite depender de resultados de busca imprevisíveis;
+* evite dados que mudem frequentemente.
 
-Prefer:
+Para cada mercado, documente claramente qual SKU/dado é utilizado e por quê.
 
-**Diagnose**
-→
-**Propose**
-→
-**Approve**
-→
-**Apply**
-→
-**Re-test**
+Caso exista configuração específica por mercado, mantenha essa configuração isolada.
 
-Highlight:
+Exemplo conceitual:
 
-**Human Approval**
+```text
+BRA → SKU próprio de Smoke
+MEX → SKU próprio de Smoke
+CONSULMEX → SKU próprio de Smoke
+ARG → SKU próprio de Smoke
+COL → SKU próprio de Smoke
+```
 
-Do not explain this process with a paragraph.
+Não assuma que o mesmo SKU funciona em todos os mercados.
 
-==================================================
-END-TO-END ARCHITECTURE SLIDE
-==================================================
+---
 
-Make this slide almost entirely visual.
+# 9. DEEP LINKS E ATALHOS
 
-Use:
+Sempre que possível, reduza etapas intermediárias.
 
-Test Selection
-→
-Orchestrator
-→
-Execution
-→
-Failure Grouping
-→
-Healer
-→
-Investigation
-→
-Patch
-→
-Human Approval
-→
-Validation
+Por exemplo:
 
-Use short labels for responsibility boundaries.
+### Evitar
 
-For example:
+```text
+Home
+→ Menu
+→ Categoria
+→ Subcategoria
+→ Busca
+→ Produto
+→ PDP
+```
 
-**ORCHESTRATOR**
-Execution + Failure Organization
+### Preferir
 
-**HEALER**
-Investigation + Remediation
+```text
+PDP Deep Link
+→ PDP
+```
 
-**HUMAN**
-Approval + Control
+Da mesma forma, quando possível, utilize mecanismos que permitam chegar ao estado necessário do teste sem repetir etapas já validadas por outro Smoke.
 
-Do not add explanatory paragraphs.
+O objetivo é reduzir:
 
-==================================================
-VALIDATION / RESULTS SLIDE
-==================================================
+* tempo de execução;
+* pontos de falha;
+* flakiness;
+* dependências entre testes.
 
-Keep the practical validation content, but make it concise.
+Importante:
 
-For the Colombia pipeline case:
+**Não utilize atalhos que deixem de validar o comportamento que o Smoke deveria provar.**
 
-**01 — PIPELINE RECOVERY**
+O atalho deve remover complexidade desnecessária, não mascarar uma funcionalidade quebrada.
 
-**Context**
-Broken automation
+---
 
-**Agent**
-Failure analysis + healing
+# 10. WAIT FOR TIMEOUT
 
-**Observed**
-High correction accuracy + flaky identification
+Remova usos desnecessários de:
 
-Only include quantitative metrics if they are explicitly documented.
+```typescript
+waitForTimeout()
+```
 
-For Colombia → Mexico:
+Especialmente waits utilizados apenas para:
 
-**02 — CROSS-COUNTRY ADAPTATION**
+* "dar tempo para a página carregar";
+* esperar animações;
+* compensar race conditions;
+* mascarar problemas de sincronização.
 
-**Source**
-Colombia test suite
+Substitua por sincronização baseada em estado observável, utilizando os mecanismos já existentes no projeto, como:
 
-**Target**
-Mexico environment
+* locator assertions;
+* `expect`;
+* espera por elementos;
+* espera por URL;
+* espera por estado de carregamento;
+* condições específicas de negócio;
+* mecanismos de espera já existentes nos Page Objects.
 
-**Agent**
-Context-specific test adaptation
+Não introduza waits arbitrários novos.
 
-**Observed**
-Reduced manual effort for simple adjustments
+---
 
-Again, do not claim full migration automation unless explicitly supported.
+# 11. REMOVER IF/ELSE DESNECESSÁRIOS
 
-==================================================
-SPEAKER NOTES
-==================================================
+Analise a implementação atual e remova `if/else` utilizados apenas para contornar instabilidade ou diferenças que deveriam estar encapsuladas na configuração do mercado.
 
-IMPORTANT:
+Evite padrões como:
 
-Move detailed explanations into the Speaker Notes.
+```typescript
+if (mercado === ...)
+```
 
-The slide should contain the concise version.
+espalhados pelo teste.
 
-The speaker notes should contain the explanation I can give verbally.
+Quando houver diferenças legítimas entre mercados, prefira:
 
-For example:
+* configuração;
+* fixtures;
+* test data;
+* Page Objects;
+* adapters/helpers específicos.
 
-SLIDE:
-**Actionable failures**
-Raw traces → resumable batches
+O Smoke deve continuar legível.
 
-SPEAKER NOTE:
-"The Orchestrator goes beyond simply exposing the failure through a static report. It extracts the failure information and organizes related failures into batches that can be processed by the healing workflow and resumed when necessary."
+---
 
-Use this principle throughout the presentation.
+# 12. IDS DOS TESTES
 
-The notes can be significantly more detailed than the slide.
+Criar IDs únicos e padronizados para os Smoke Tests.
 
-==================================================
-VISUAL PRIORITY
-==================================================
+Utilize o padrão:
 
-The visual hierarchy should be:
+```text
+<MERCADO>-SMK-<NÚMERO>
+```
 
-1. Main message
-2. Architecture / flow
-3. Short technical labels
-4. Supporting details
+Exemplos:
 
-NOT:
+```text
+BRA-SMK-001
+BRA-SMK-002
 
-1. Large blocks of text
-2. Decorative elements
-3. Secondary information
+MEX-SMK-001
+MEX-SMK-002
 
-Use whitespace as an active design element.
+CONSULMEX-SMK-001
 
-==================================================
-FINAL CHECK
-==================================================
+ARG-SMK-001
 
-Before delivering the revised presentation, perform a text-density review.
+COL-SMK-001
+COL-SMK-002
+```
 
-For every slide, ask:
+Os IDs devem ser:
 
-"Can I understand the main idea in 5–8 seconds?"
+* únicos;
+* estáveis;
+* fáceis de identificar;
+* associados ao mercado;
+* apropriados para integração com Zephyr.
 
-"Could this sentence be reduced to a technical phrase?"
+Não reutilize IDs existentes de outros tipos de teste.
 
-"Can this explanation be moved to Speaker Notes?"
+Antes de criar um ID, procure no projeto para garantir que ele não esteja sendo utilizado.
 
-"Is this text duplicating something already shown visually?"
+---
 
-"If I remove this sentence, do I lose technical meaning?"
+# 13. ZEphyr
 
-If the answer is no, remove it.
+Verifique como os IDs de teste são atualmente associados ao Zephyr.
 
-The final presentation should feel:
+Mantenha compatibilidade com o mecanismo existente.
 
-TECHNICAL
-BUT NOT TEXT-HEAVY.
+Não altere a integração com Zephyr sem necessidade.
 
-DETAILED
-BUT NOT DOCUMENTATION-LIKE.
+O resultado final deve permitir identificar claramente:
 
-PRECISE
-BUT NOT VERBOSE.
+```text
+BRA-SMK-001
+MEX-SMK-001
+CONSULMEX-SMK-001
+ARG-SMK-001
+COL-SMK-001
+```
 
-VISUAL
-BUT NOT DECORATIVE.
+e relacioná-los corretamente ao respectivo Smoke Test.
 
-The presenter should provide the depth.
+---
 
-The slide should provide the structure.
+# 14. ISOLAMENTO ENTRE TESTES
+
+Cada Smoke deve ser independente.
+
+Evite:
+
+```text
+Smoke 2 depende do estado criado pelo Smoke 1
+```
+
+Prefira:
+
+```text
+Smoke 1 → independente
+Smoke 2 → independente
+Smoke 3 → independente
+```
+
+Se um teste falhar, os demais devem continuar capazes de executar.
+
+Não crie dependências artificiais entre os três pilares.
+
+---
+
+# 15. CRITÉRIO DE SELEÇÃO
+
+Para cada cenário candidato encontrado nos Feature Tests, faça a seguinte avaliação:
+
+### Pergunte:
+
+1. Esse cenário comprova uma funcionalidade essencial?
+2. Ele detectaria uma regressão crítica?
+3. Ele pode ser executado rapidamente?
+4. Ele possui dados determinísticos?
+5. Ele possui poucas dependências?
+6. Ele pode ser executado isoladamente?
+7. Ele representa corretamente o objetivo de um Smoke Test?
+
+Se a resposta for não, não transforme esse cenário em Smoke.
+
+O objetivo não é maximizar a quantidade de Smoke Tests.
+
+O objetivo é maximizar o **sinal de saúde da aplicação com o menor custo e menor instabilidade possível**.
+
+---
+
+# 16. PADRÃO POR MERCADO
+
+Aplique a mesma estratégia arquitetural aos cinco mercados:
+
+```text
+BRA
+MEX
+CONSULMEX
+ARG
+COL
+```
+
+Porém, NÃO force os mercados a terem exatamente os mesmos testes caso existam diferenças reais de:
+
+* jornada;
+* catálogo;
+* checkout;
+* URLs;
+* componentes;
+* regras;
+* disponibilidade;
+* arquitetura.
+
+A arquitetura deve ser padronizada.
+
+Os dados e particularidades de cada mercado podem ser específicos.
+
+---
+
+# 17. PIPELINE
+
+Depois de implementar e validar os novos Smoke Tests, analise a pipeline atual.
+
+Atualize a seleção/execution dos Smoke Tests para utilizar a nova estrutura.
+
+Verifique:
+
+* quais arquivos são executados;
+* quais tags são utilizadas;
+* como o mercado é selecionado;
+* como os IDs são identificados;
+* se algum Smoke antigo ainda está sendo executado;
+* se existem duplicidades;
+* se existem testes antigos que precisam ser removidos/descontinuados.
+
+Não deixe a pipeline executando simultaneamente o Smoke antigo e o novo sem uma razão explícita.
+
+---
+
+# 18. VALIDAÇÃO
+
+Depois da implementação, execute os Smoke Tests individualmente e por mercado.
+
+Validar:
+
+```text
+BRA
+├── Home Availability
+├── Catalog PDP Rendering
+└── Checkout Viability
+
+MEX
+├── Home Availability
+├── Catalog PDP Rendering
+└── Checkout Viability
+
+CONSULMEX
+├── Home Availability
+├── Catalog PDP Rendering
+└── Checkout Viability
+
+ARG
+├── Home Availability
+├── Catalog PDP Rendering
+└── Checkout Viability
+
+COL
+├── Home Availability
+├── Catalog PDP Rendering
+└── Checkout Viability
+```
+
+Quando algum pilar não puder ser implementado exatamente dessa forma por uma particularidade do mercado, documente o motivo.
+
+---
+
+# 19. ANÁLISE DE FLAKINESS
+
+Durante a execução, observe especialmente:
+
+* timeout;
+* elementos intermitentes;
+* problemas de sincronização;
+* SKU sem estoque;
+* redirecionamentos;
+* carregamento tardio;
+* diferenças de ambiente;
+* problemas de sessão;
+* dependências entre testes;
+* problemas específicos de mercado.
+
+Não resolva flakiness simplesmente aumentando timeout.
+
+Investigue a causa.
+
+---
+
+# 20. REGRAS IMPORTANTES
+
+NÃO:
+
+* copiar Feature Tests inteiros para Smoke;
+* apenas adicionar `@smoke` aos testes existentes;
+* aumentar timeouts para esconder problemas;
+* utilizar `waitForTimeout` sem necessidade;
+* criar dependência entre Smoke Tests;
+* utilizar dados aleatórios quando dados determinísticos estiverem disponíveis;
+* depender de busca/catalog navigation quando um deep link for suficiente;
+* criar `if/else` específicos de mercado espalhados pelo teste;
+* alterar funcionalidades de produção;
+* modificar Feature Tests apenas para fazer o Smoke funcionar;
+* remover cobertura funcional existente sem justificativa.
+
+SIM:
+
+* reutilizar Page Objects existentes;
+* reutilizar fixtures quando apropriado;
+* reutilizar helpers estáveis;
+* utilizar Feature Tests como fonte de conhecimento;
+* criar cenários Smoke dedicados;
+* manter os testes pequenos;
+* utilizar dados determinísticos;
+* utilizar deep links;
+* utilizar waits baseados em estado;
+* separar particularidades por mercado;
+* criar IDs únicos;
+* manter compatibilidade com Zephyr;
+* atualizar a pipeline para a nova arquitetura.
+
+---
+
+# 21. PROCESSO DE IMPLEMENTAÇÃO
+
+Execute o trabalho nesta ordem:
+
+### Fase 1 — Discovery
+
+Mapear arquitetura, Feature Tests, Smoke atual, dados e pipeline.
+
+### Fase 2 — Coverage Mapping
+
+Criar mentalmente/estruturalmente um mapa:
+
+```text
+Feature Tests
+      ↓
+Identificação dos fluxos críticos
+      ↓
+Seleção dos menores cenários necessários
+      ↓
+Smoke Tests dedicados
+```
+
+### Fase 3 — Design
+
+Definir a estrutura modular:
+
+```text
+Home Availability
+Catalog PDP Rendering
+Checkout Viability
+```
+
+para cada mercado.
+
+### Fase 4 — Implementation
+
+Implementar os novos Smoke Tests.
+
+### Fase 5 — Data Hardening
+
+Garantir dados/SKUs determinísticos e adequados.
+
+### Fase 6 — Stability
+
+Remover:
+
+* `waitForTimeout`;
+* condições desnecessárias;
+* dependências;
+* navegação intermediária desnecessária.
+
+### Fase 7 — IDs / Zephyr
+
+Garantir IDs únicos no padrão:
+
+```text
+<MERCADO>-SMK-XXX
+```
+
+### Fase 8 — Pipeline
+
+Atualizar a pipeline para utilizar exclusivamente a nova estratégia.
+
+### Fase 9 — Validation
+
+Executar e validar os cinco mercados.
+
+### Fase 10 — Final Review
+
+Antes de finalizar, revisar toda a implementação procurando:
+
+* duplicidade;
+* complexidade;
+* waits;
+* dependências;
+* dados frágeis;
+* diferenças de mercado mal encapsuladas;
+* Smoke Tests que deveriam permanecer como Feature Tests.
+
+---
+
+# 22. RESULTADO FINAL ESPERADO
+
+Ao final, entregue:
+
+1. Nova estrutura modular de Smoke Tests.
+2. Smoke Tests dedicados para BRA, MEX, CONSULMEX, ARG e COL.
+3. Cobertura dos três pilares:
+
+   * Home Availability
+   * Catalog PDP Rendering
+   * Checkout Viability
+4. Dados/SKUs determinísticos.
+5. Deep links/atalhos onde fizer sentido.
+6. Remoção de `waitForTimeout` desnecessário.
+7. Redução de `if/else` específicos de mercado.
+8. IDs únicos para Zephyr.
+9. Pipeline atualizada.
+10. Smoke Tests independentes e atômicos.
+11. Evidência de execução dos testes.
+12. Resumo das alterações realizadas.
+13. Lista de eventuais limitações ou pontos que não puderam ser padronizados entre os mercados.
+
+## REGRA FINAL
+
+Não implemente baseado apenas na descrição acima.
+
+**Inspecione primeiro o código real do projeto, os Feature Tests, os Page Objects, os dados, a configuração dos mercados e a pipeline.**
+
+As decisões de implementação devem ser baseadas na arquitetura existente.
+
+Antes de alterar arquivos, apresente um resumo do que você encontrou e o plano de alteração.
+
+Depois da implementação, apresente:
+
+```text
+[DISCOVERY]
+O que foi encontrado.
+
+[IMPLEMENTATION]
+O que foi alterado.
+
+[SMOKE COVERAGE]
+Quais Smoke Tests foram criados por mercado.
+
+[DATA]
+Quais dados/SKUs foram utilizados.
+
+[STABILITY]
+Quais waits/dependências/flakiness foram tratados.
+
+[ZEPHYR]
+Quais IDs foram criados.
+
+[PIPELINE]
+Quais alterações foram realizadas.
+
+[VALIDATION]
+Quais testes foram executados e seus resultados.
+
+[OPEN ISSUES]
+O que ainda depende de decisão ou correção.
+```
+
+**Prioridade geral:**
+
+Determinismo > Velocidade > Simplicidade > Cobertura mínima crítica.
+
+O Smoke deve fornecer um sinal confiável de saúde da aplicação, e não substituir a suíte de Feature Tests.
