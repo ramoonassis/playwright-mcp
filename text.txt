@@ -1,782 +1,885 @@
-Você é um engenheiro de QA Automation responsável por refatorar e padronizar a suíte de Smoke Tests da automação E2E deste projeto.
+Você é um Staff/Senior QA Automation Engineer especializado em Playwright, MCP, Web Analytics (WA), validação de eventos, observabilidade de aplicações web e construção de agentes de QA.
 
-## OBJETIVO
+Quero que você implemente, DENTRO DESTE PROJETO, um novo agente especializado em validação de tasks de Web Analytics (WA), utilizando exclusivamente as ferramentas MCP do Playwright disponíveis neste ambiente.
 
-Refatorar os Smoke Tests de todos os mercados:
+IMPORTANTE:
 
-* Brasil (BRA)
-* México (MEX)
-* Consul México (CONSULMEX)
-* Argentina (ARG)
-* Colômbia (COL)
+* Antes de alterar qualquer arquivo, faça uma análise completa da estrutura atual do projeto.
+* Identifique como os agentes existentes estão organizados.
+* Identifique padrões utilizados pelo Healer, Adapter, Orchestrator e demais agentes existentes.
+* Reutilize padrões e componentes existentes sempre que fizer sentido.
+* NÃO recrie arquitetura que já exista.
+* NÃO altere agentes existentes sem necessidade.
+* NÃO quebre funcionalidades atuais.
+* Se existir documentação de arquitetura, leia-a antes de implementar.
+* Se existirem arquivos de configuração, prompts, skills, instructions ou agents já utilizados pelo projeto, siga o mesmo padrão.
+* Não assuma nomes de arquivos ou diretórios. Descubra a estrutura real do projeto primeiro.
 
-A nova implementação deve substituir o modelo monolítico/fragilizado atual por uma abordagem **modular, atômica, rápida, determinística e específica para Smoke Tests**.
+==================================================
 
-O objetivo dos Smoke Tests NÃO é cobrir profundamente as regras de negócio.
+1. OBJETIVO DO NOVO AGENTE
+   ==================================================
 
-Eles devem funcionar como um **"heartbeat" da aplicação**, respondendo rapidamente:
+Criar um agente chamado:
 
-> "O site está vivo e os principais caminhos críticos estão funcionando?"
+WA Validator Agent
 
----
+Responsabilidade:
 
-# 1. PRINCÍPIO FUNDAMENTAL
+Receber um plano/instrução estruturada produzido por um agente externo de QA, como o Rovo WA Validator, e executar a validação prática da task de Web Analytics utilizando Playwright MCP.
 
-NÃO reutilize simplesmente os `specs` de Feature existentes adicionando uma tag `smoke`.
+O agente NÃO deve ser responsável por substituir o Rovo na interpretação completa da task.
 
-Os testes de Feature e os Smoke Tests têm objetivos diferentes.
+O Rovo é o agente responsável por:
 
-### Feature Tests
+* interpretar a task;
+* coletar contexto;
+* identificar condicionantes;
+* avaliar viabilidade;
+* identificar o que deve ser validado;
+* definir os casos de teste;
+* definir snippets;
+* definir checkpoint regressivo;
+* definir quais evidências devem ser coletadas;
+* definir o próximo passo.
 
-Devem continuar responsáveis por:
+O WA Validator Agent é responsável por:
 
-* regras detalhadas de negócio;
-* cenários positivos e negativos;
-* casos de borda;
-* diferentes combinações de dados;
-* validações detalhadas;
-* maior profundidade funcional.
+* executar o plano recebido;
+* acessar a aplicação;
+* navegar pelas páginas;
+* interagir com elementos;
+* observar o comportamento da aplicação;
+* validar elementos visuais/DOM;
+* capturar console;
+* observar network requests;
+* identificar eventos de Analytics;
+* validar payloads;
+* comparar comportamento observado com o comportamento esperado;
+* coletar evidências;
+* informar claramente PASS / FAIL / BLOCKED / INCONCLUSIVE;
+* devolver os resultados para o agente chamador.
 
-### Smoke Tests
+==================================================
+2. MODELO DE DOIS AGENTES
+=========================
 
-Devem ser responsáveis por:
+A arquitetura conceitual deverá ser:
 
-* validar disponibilidade;
-* validar renderização;
-* validar os principais caminhos críticos;
-* detectar rapidamente regressões graves;
-* possuir poucas etapas;
-* possuir o mínimo possível de dependências;
-* evitar etapas intermediárias desnecessárias;
-* serem rápidos e determinísticos.
+Rovo WA Validator
+|
+| plano estruturado
+v
+WA Validator Agent
+|
+| Playwright MCP
+v
+Browser / WA
+|
++--> DOM
++--> UI
++--> Network
++--> Console
++--> Analytics
++--> Screenshots
+|
+v
+Resultado estruturado
+|
+v
+Rovo WA Validator
+|
+v
+Fechamento da task
 
-Portanto:
+Não faça o WA Validator Agent tentar "adivinhar" o que o Rovo quis dizer.
 
-**Use os Feature Tests como fonte de conhecimento e cobertura existente, mas crie cenários Smoke próprios e dedicados.**
+Quando uma informação crítica não estiver presente no plano recebido, o agente deve identificar a lacuna e solicitar/retornar a informação necessária em vez de inventá-la.
 
----
+==================================================
+3. CONTRATO DE ENTRADA
+======================
 
-# 2. PRIMEIRO PASSO — NÃO ALTERAR NADA
+O agente deverá aceitar como entrada um plano estruturado equivalente ao seguinte:
 
-Antes de modificar qualquer arquivo, faça uma análise completa da estrutura atual.
+{
+"contexto_coletado": "...",
+"condicionantes": [
+"..."
+],
+"validacao": {
+"status": "VALIDAVEL | VALIDAVEL_COM_RESSALVAS | NAO_VALIDAVEL",
+"motivo": "..."
+},
+"casos_de_teste": [
+{
+"id": "WA-001",
+"descricao": "...",
+"pre_condicoes": [],
+"passos": [],
+"resultado_esperado": "..."
+}
+],
+"snippets": [
+{
+"objetivo": "...",
+"acao": "...",
+"elemento": "...",
+"resultado_esperado": "..."
+}
+],
+"checkpoint_regressivo": [
+"..."
+],
+"evidencias": [
+{
+"tipo": "screenshot | network | console | dom | url | payload | outro",
+"descricao": "..."
+}
+],
+"proximo_passo": "..."
+}
 
-Mapeie:
+O formato real deverá ser adaptado ao padrão já existente no projeto.
 
-* pasta atual de Smoke Tests;
-* `home.spec.ts`;
-* `PDP.spec.ts`;
-* pasta/arquivos de checkout;
-* Page Objects utilizados;
-* fixtures;
-* test data;
-* configuração por mercado;
-* configurações de URL;
-* configurações de ambiente;
-* tags existentes;
-* IDs de testes existentes;
-* configuração atual da pipeline;
-* qualquer mecanismo atual de seleção de Smoke Tests.
+Não crie um novo formato se o projeto já possuir um contrato equivalente.
 
-Também identifique se existem diferenças de implementação entre:
+==================================================
+4. CICLO DE EXECUÇÃO
+====================
 
-* BRA
-* MEX
-* CONSULMEX
-* ARG
-* COL
+O agente deverá seguir obrigatoriamente este ciclo:
 
-Não faça alterações durante essa etapa.
+FASE 1 — PREPARAÇÃO
 
-Primeiro compreenda a arquitetura existente.
+* Ler o plano recebido.
+* Identificar URL/ambiente.
+* Identificar pré-condições.
+* Identificar dados necessários.
+* Identificar eventos esperados.
+* Identificar elementos envolvidos.
+* Identificar critérios de sucesso.
+* Identificar evidências obrigatórias.
 
----
+Antes de iniciar interações, verificar se o plano possui informações suficientes para executar o teste.
 
-# 3. MAPEAMENTO DOS CENÁRIOS EXISTENTES
+Se não possuir:
 
-Depois da análise estrutural, examine os testes existentes de:
+STATUS = BLOCKED
 
-### Home
+Explicar exatamente qual informação está faltando.
 
-`home.spec.ts`
+Nunca inventar:
 
-Identifique quais cenários realmente comprovam que a Home está disponível e funcional.
-
-Priorize:
-
-* carregamento da Home;
-* elementos essenciais;
-* disponibilidade da página;
-* navegação crítica, quando necessária;
-* ausência de dependências desnecessárias.
-
-Não copie automaticamente todos os cenários.
-
-Selecione apenas o que possui valor como Smoke.
-
----
-
-### PDP / Catalog
-
-`PDP.spec.ts`
-
-Identifique os cenários capazes de validar:
-
-* acesso à PDP;
-* carregamento da PDP;
-* renderização dos elementos essenciais;
-* disponibilidade de produto;
-* informações mínimas necessárias;
-* interação essencial para prosseguir para compra, quando aplicável.
-
-O Smoke deve validar **PDP Rendering**, e não reproduzir toda a cobertura funcional existente na PDP.
-
----
-
-### Checkout
-
-Analise todos os arquivos existentes dentro da pasta:
-
-`/checkout`
-
-Identifique o menor conjunto de ações necessário para provar que o checkout está viável.
-
-Priorize:
-
-* entrada no checkout;
-* carregamento;
-* componentes críticos;
-* avanço de etapas essenciais;
-* validações mínimas necessárias para demonstrar viabilidade.
-
-Evite reproduzir fluxos completos e detalhados que já pertencem aos Feature Tests.
-
----
-
-# 4. NOVA ESTRUTURA
-
-O Smoke deve seguir uma arquitetura modular baseada em três pilares:
-
-```text
-Smoke
-├── Home Availability
-├── Catalog PDP Rendering
-└── Checkout Viability
-```
-
-A implementação esperada é baseada em um arquivo semelhante a:
-
-```text
-smoke/
-└── modular.spec.ts
-```
-
-ou na estrutura equivalente já utilizada pelo projeto.
-
-O arquivo deve ser responsável por organizar os três pilares, mantendo os testes:
-
-* independentes;
-* pequenos;
-* atômicos;
-* fáceis de diagnosticar;
-* rápidos;
-* específicos para Smoke.
-
-Não transforme `modular.spec.ts` em um novo arquivo monolítico gigante.
-
-Se necessário, utilize helpers, fixtures ou módulos auxiliares para manter a separação de responsabilidades.
+* URL;
+* SKU;
+* evento;
+* payload;
+* selector;
+* parâmetro;
+* ambiente;
+* condição de negócio.
 
 ---
 
-# 5. HOME AVAILABILITY
+FASE 2 — ACESSO À APLICAÇÃO
 
-Criar Smoke Tests específicos para validar a disponibilidade da Home.
+Utilizar exclusivamente as ferramentas MCP do Playwright disponíveis.
 
-O teste deve responder essencialmente:
+Priorizar:
 
-> A Home deste mercado está acessível e renderizando o mínimo necessário?
+* navegação;
+* inspeção da página;
+* snapshot;
+* locators semânticos;
+* elementos visíveis;
+* atributos relevantes;
+* URLs;
+* estado da página.
 
-Evite:
+Evitar selectors frágeis quando existir alternativa mais robusta.
 
-* navegar por múltiplas páginas sem necessidade;
-* executar regras de negócio;
-* validar conteúdo detalhado;
-* realizar ações que não sejam necessárias para provar disponibilidade.
+Não alterar código da aplicação.
 
-O teste deve falhar rapidamente quando a Home estiver indisponível ou quebrada.
+Não alterar arquivos do projeto para fazer o teste passar.
 
----
-
-# 6. CATALOG / PDP RENDERING
-
-Criar Smoke Tests específicos para validar a PDP.
-
-O objetivo é responder:
-
-> Consigo acessar uma PDP válida e os elementos fundamentais da página estão sendo renderizados?
-
-Utilize um produto/SKU especificamente adequado para Smoke.
-
-Não dependa de:
-
-* busca complexa;
-* navegação extensa pelo catálogo;
-* dados que possam desaparecer;
-* produtos aleatórios;
-* etapas intermediárias desnecessárias.
-
-Sempre que a arquitetura permitir, prefira acesso direto/deep link à PDP.
+Não mascarar erros.
 
 ---
 
-# 7. CHECKOUT VIABILITY
+FASE 3 — EXECUÇÃO DO CASO DE TESTE
 
-Criar Smoke Tests específicos para validar que o checkout está funcional.
+Executar os passos definidos pelo Rovo.
 
-O objetivo é responder:
+Para cada passo:
 
-> Um usuário consegue chegar ao checkout através do caminho mínimo necessário e o checkout está operacional?
+1. identificar o elemento;
+2. executar a ação;
+3. verificar o resultado;
+4. registrar evidência;
+5. continuar somente se a condição permitir.
 
-Utilize os arquivos existentes na pasta `/checkout` como referência para entender:
+Quando houver comportamento inesperado, não ignorar.
 
-* Page Objects;
-* locators;
-* etapas;
-* dados;
-* validações;
-* comportamento esperado.
+Registrar:
 
-Entretanto, NÃO copie um Feature Test inteiro.
-
-Crie o caminho mínimo necessário para validar a viabilidade do checkout.
+* ação executada;
+* resultado observado;
+* erro;
+* URL;
+* elemento;
+* estado;
+* evidência.
 
 ---
 
-# 8. TEST DATA
+FASE 4 — TAGGING / ANALYTICS VALIDATION
 
-Smoke Tests devem utilizar dados **determinísticos e controlados**.
+Esta é uma das responsabilidades principais do agente.
 
-Um problema crítico a ser evitado é:
+Quando a task envolver Web Analytics, o agente deverá observar as requisições relevantes da aplicação.
 
-> Smoke falhar simplesmente porque um SKU ficou sem estoque ou deixou de existir.
+Investigar:
 
-Portanto:
-
-* identifique os SKUs atualmente utilizados pelos mercados;
-* identifique quais possuem disponibilidade garantida;
-* utilize dados próprios para Smoke sempre que possível;
-* evite produtos escolhidos dinamicamente quando isso introduzir instabilidade;
-* evite depender de resultados de busca imprevisíveis;
-* evite dados que mudem frequentemente.
-
-Para cada mercado, documente claramente qual SKU/dado é utilizado e por quê.
-
-Caso exista configuração específica por mercado, mantenha essa configuração isolada.
+* requests de Analytics;
+* eventos;
+* payloads;
+* query parameters;
+* request body;
+* headers relevantes quando necessários;
+* valores enviados;
+* quantidade de eventos;
+* momento do disparo;
+* relação entre ação do usuário e evento.
 
 Exemplo conceitual:
 
-```text
-BRA → SKU próprio de Smoke
-MEX → SKU próprio de Smoke
-CONSULMEX → SKU próprio de Smoke
-ARG → SKU próprio de Smoke
-COL → SKU próprio de Smoke
-```
+Ação:
 
-Não assuma que o mesmo SKU funciona em todos os mercados.
+"Clicar no botão Comprar"
 
----
+Esperado:
 
-# 9. DEEP LINKS E ATALHOS
-
-Sempre que possível, reduza etapas intermediárias.
-
-Por exemplo:
-
-### Evitar
-
-```text
-Home
-→ Menu
-→ Categoria
-→ Subcategoria
-→ Busca
-→ Produto
-→ PDP
-```
-
-### Preferir
-
-```text
-PDP Deep Link
-→ PDP
-```
-
-Da mesma forma, quando possível, utilize mecanismos que permitam chegar ao estado necessário do teste sem repetir etapas já validadas por outro Smoke.
-
-O objetivo é reduzir:
-
-* tempo de execução;
-* pontos de falha;
-* flakiness;
-* dependências entre testes.
-
-Importante:
-
-**Não utilize atalhos que deixem de validar o comportamento que o Smoke deveria provar.**
-
-O atalho deve remover complexidade desnecessária, não mascarar uma funcionalidade quebrada.
-
----
-
-# 10. WAIT FOR TIMEOUT
-
-Remova usos desnecessários de:
-
-```typescript
-waitForTimeout()
-```
-
-Especialmente waits utilizados apenas para:
-
-* "dar tempo para a página carregar";
-* esperar animações;
-* compensar race conditions;
-* mascarar problemas de sincronização.
-
-Substitua por sincronização baseada em estado observável, utilizando os mecanismos já existentes no projeto, como:
-
-* locator assertions;
-* `expect`;
-* espera por elementos;
-* espera por URL;
-* espera por estado de carregamento;
-* condições específicas de negócio;
-* mecanismos de espera já existentes nos Page Objects.
-
-Não introduza waits arbitrários novos.
-
----
-
-# 11. REMOVER IF/ELSE DESNECESSÁRIOS
-
-Analise a implementação atual e remova `if/else` utilizados apenas para contornar instabilidade ou diferenças que deveriam estar encapsuladas na configuração do mercado.
-
-Evite padrões como:
-
-```typescript
-if (mercado === ...)
-```
-
-espalhados pelo teste.
-
-Quando houver diferenças legítimas entre mercados, prefira:
-
-* configuração;
-* fixtures;
-* test data;
-* Page Objects;
-* adapters/helpers específicos.
-
-O Smoke deve continuar legível.
-
----
-
-# 12. IDS DOS TESTES
-
-Criar IDs únicos e padronizados para os Smoke Tests.
-
-Utilize o padrão:
-
-```text
-<MERCADO>-SMK-<NÚMERO>
-```
-
-Exemplos:
-
-```text
-BRA-SMK-001
-BRA-SMK-002
-
-MEX-SMK-001
-MEX-SMK-002
-
-CONSULMEX-SMK-001
-
-ARG-SMK-001
-
-COL-SMK-001
-COL-SMK-002
-```
-
-Os IDs devem ser:
-
-* únicos;
-* estáveis;
-* fáceis de identificar;
-* associados ao mercado;
-* apropriados para integração com Zephyr.
-
-Não reutilize IDs existentes de outros tipos de teste.
-
-Antes de criar um ID, procure no projeto para garantir que ele não esteja sendo utilizado.
-
----
-
-# 13. ZEphyr
-
-Verifique como os IDs de teste são atualmente associados ao Zephyr.
-
-Mantenha compatibilidade com o mecanismo existente.
-
-Não altere a integração com Zephyr sem necessidade.
-
-O resultado final deve permitir identificar claramente:
-
-```text
-BRA-SMK-001
-MEX-SMK-001
-CONSULMEX-SMK-001
-ARG-SMK-001
-COL-SMK-001
-```
-
-e relacioná-los corretamente ao respectivo Smoke Test.
-
----
-
-# 14. ISOLAMENTO ENTRE TESTES
-
-Cada Smoke deve ser independente.
-
-Evite:
-
-```text
-Smoke 2 depende do estado criado pelo Smoke 1
-```
-
-Prefira:
-
-```text
-Smoke 1 → independente
-Smoke 2 → independente
-Smoke 3 → independente
-```
-
-Se um teste falhar, os demais devem continuar capazes de executar.
-
-Não crie dependências artificiais entre os três pilares.
-
----
-
-# 15. CRITÉRIO DE SELEÇÃO
-
-Para cada cenário candidato encontrado nos Feature Tests, faça a seguinte avaliação:
-
-### Pergunte:
-
-1. Esse cenário comprova uma funcionalidade essencial?
-2. Ele detectaria uma regressão crítica?
-3. Ele pode ser executado rapidamente?
-4. Ele possui dados determinísticos?
-5. Ele possui poucas dependências?
-6. Ele pode ser executado isoladamente?
-7. Ele representa corretamente o objetivo de um Smoke Test?
-
-Se a resposta for não, não transforme esse cenário em Smoke.
-
-O objetivo não é maximizar a quantidade de Smoke Tests.
-
-O objetivo é maximizar o **sinal de saúde da aplicação com o menor custo e menor instabilidade possível**.
-
----
-
-# 16. PADRÃO POR MERCADO
-
-Aplique a mesma estratégia arquitetural aos cinco mercados:
-
-```text
-BRA
-MEX
-CONSULMEX
-ARG
-COL
-```
-
-Porém, NÃO force os mercados a terem exatamente os mesmos testes caso existam diferenças reais de:
-
-* jornada;
-* catálogo;
-* checkout;
-* URLs;
-* componentes;
-* regras;
-* disponibilidade;
-* arquitetura.
-
-A arquitetura deve ser padronizada.
-
-Os dados e particularidades de cada mercado podem ser específicos.
-
----
-
-# 17. PIPELINE
-
-Depois de implementar e validar os novos Smoke Tests, analise a pipeline atual.
-
-Atualize a seleção/execution dos Smoke Tests para utilizar a nova estrutura.
-
-Verifique:
-
-* quais arquivos são executados;
-* quais tags são utilizadas;
-* como o mercado é selecionado;
-* como os IDs são identificados;
-* se algum Smoke antigo ainda está sendo executado;
-* se existem duplicidades;
-* se existem testes antigos que precisam ser removidos/descontinuados.
-
-Não deixe a pipeline executando simultaneamente o Smoke antigo e o novo sem uma razão explícita.
-
----
-
-# 18. VALIDAÇÃO
-
-Depois da implementação, execute os Smoke Tests individualmente e por mercado.
+event = add_to_cart
 
 Validar:
 
-```text
-BRA
-├── Home Availability
-├── Catalog PDP Rendering
-└── Checkout Viability
+* o evento ocorreu;
+* ocorreu após a ação esperada;
+* ocorreu uma quantidade compatível;
+* nome do evento está correto;
+* parâmetros obrigatórios existem;
+* valores dos parâmetros estão corretos;
+* valores correspondem ao estado real da página.
 
-MEX
-├── Home Availability
-├── Catalog PDP Rendering
-└── Checkout Viability
+Não considerar o simples fato de uma request existir como PASS.
 
-CONSULMEX
-├── Home Availability
-├── Catalog PDP Rendering
-└── Checkout Viability
-
-ARG
-├── Home Availability
-├── Catalog PDP Rendering
-└── Checkout Viability
-
-COL
-├── Home Availability
-├── Catalog PDP Rendering
-└── Checkout Viability
-```
-
-Quando algum pilar não puder ser implementado exatamente dessa forma por uma particularidade do mercado, documente o motivo.
+Validar o conteúdo.
 
 ---
 
-# 19. ANÁLISE DE FLAKINESS
+FASE 5 — NETWORK
 
-Durante a execução, observe especialmente:
+Sempre que o plano indicar validação de Analytics, usar as ferramentas disponíveis para investigar Network.
 
-* timeout;
-* elementos intermitentes;
-* problemas de sincronização;
-* SKU sem estoque;
-* redirecionamentos;
-* carregamento tardio;
-* diferenças de ambiente;
-* problemas de sessão;
-* dependências entre testes;
-* problemas específicos de mercado.
+Buscar evidências relacionadas a:
 
-Não resolva flakiness simplesmente aumentando timeout.
+* GA/GTM;
+* dataLayer;
+* endpoints de tracking;
+* requests de eventos;
+* ferramentas de analytics utilizadas pela aplicação;
+* parâmetros de tracking;
+* payloads.
 
-Investigue a causa.
+Não assumir nomes específicos de ferramentas de Analytics.
 
----
+Descobrir pelo comportamento da aplicação.
 
-# 20. REGRAS IMPORTANTES
+Quando possível, correlacionar:
 
-NÃO:
-
-* copiar Feature Tests inteiros para Smoke;
-* apenas adicionar `@smoke` aos testes existentes;
-* aumentar timeouts para esconder problemas;
-* utilizar `waitForTimeout` sem necessidade;
-* criar dependência entre Smoke Tests;
-* utilizar dados aleatórios quando dados determinísticos estiverem disponíveis;
-* depender de busca/catalog navigation quando um deep link for suficiente;
-* criar `if/else` específicos de mercado espalhados pelo teste;
-* alterar funcionalidades de produção;
-* modificar Feature Tests apenas para fazer o Smoke funcionar;
-* remover cobertura funcional existente sem justificativa.
-
-SIM:
-
-* reutilizar Page Objects existentes;
-* reutilizar fixtures quando apropriado;
-* reutilizar helpers estáveis;
-* utilizar Feature Tests como fonte de conhecimento;
-* criar cenários Smoke dedicados;
-* manter os testes pequenos;
-* utilizar dados determinísticos;
-* utilizar deep links;
-* utilizar waits baseados em estado;
-* separar particularidades por mercado;
-* criar IDs únicos;
-* manter compatibilidade com Zephyr;
-* atualizar a pipeline para a nova arquitetura.
+AÇÃO DO USUÁRIO
+↓
+ALTERAÇÃO/COMPORTAMENTO DA UI
+↓
+REQUEST
+↓
+EVENTO
+↓
+PAYLOAD
 
 ---
 
-# 21. PROCESSO DE IMPLEMENTAÇÃO
+FASE 6 — CONSOLE
 
-Execute o trabalho nesta ordem:
+Verificar console quando:
 
-### Fase 1 — Discovery
+* houver indicação no plano;
+* ocorrer comportamento inesperado;
+* houver falha de Analytics;
+* houver erro JavaScript;
+* houver evidência de que o evento não foi disparado.
 
-Mapear arquitetura, Feature Tests, Smoke atual, dados e pipeline.
+Registrar erros relevantes.
 
-### Fase 2 — Coverage Mapping
+Não transformar warning irrelevante em FAIL.
 
-Criar mentalmente/estruturalmente um mapa:
+Classificar:
 
-```text
-Feature Tests
-      ↓
-Identificação dos fluxos críticos
-      ↓
-Seleção dos menores cenários necessários
-      ↓
-Smoke Tests dedicados
-```
-
-### Fase 3 — Design
-
-Definir a estrutura modular:
-
-```text
-Home Availability
-Catalog PDP Rendering
-Checkout Viability
-```
-
-para cada mercado.
-
-### Fase 4 — Implementation
-
-Implementar os novos Smoke Tests.
-
-### Fase 5 — Data Hardening
-
-Garantir dados/SKUs determinísticos e adequados.
-
-### Fase 6 — Stability
-
-Remover:
-
-* `waitForTimeout`;
-* condições desnecessárias;
-* dependências;
-* navegação intermediária desnecessária.
-
-### Fase 7 — IDs / Zephyr
-
-Garantir IDs únicos no padrão:
-
-```text
-<MERCADO>-SMK-XXX
-```
-
-### Fase 8 — Pipeline
-
-Atualizar a pipeline para utilizar exclusivamente a nova estratégia.
-
-### Fase 9 — Validation
-
-Executar e validar os cinco mercados.
-
-### Fase 10 — Final Review
-
-Antes de finalizar, revisar toda a implementação procurando:
-
-* duplicidade;
-* complexidade;
-* waits;
-* dependências;
-* dados frágeis;
-* diferenças de mercado mal encapsuladas;
-* Smoke Tests que deveriam permanecer como Feature Tests.
+* ERROR relevante;
+* WARNING relevante;
+* informação irrelevante.
 
 ---
 
-# 22. RESULTADO FINAL ESPERADO
+FASE 7 — DOM / UI
 
-Ao final, entregue:
+Validar:
 
-1. Nova estrutura modular de Smoke Tests.
-2. Smoke Tests dedicados para BRA, MEX, CONSULMEX, ARG e COL.
-3. Cobertura dos três pilares:
+* existência;
+* visibilidade;
+* estado;
+* texto;
+* atributos;
+* comportamento;
+* mudança de estado;
+* elementos condicionais.
 
-   * Home Availability
-   * Catalog PDP Rendering
-   * Checkout Viability
-4. Dados/SKUs determinísticos.
-5. Deep links/atalhos onde fizer sentido.
-6. Remoção de `waitForTimeout` desnecessário.
-7. Redução de `if/else` específicos de mercado.
-8. IDs únicos para Zephyr.
-9. Pipeline atualizada.
-10. Smoke Tests independentes e atômicos.
-11. Evidência de execução dos testes.
-12. Resumo das alterações realizadas.
-13. Lista de eventuais limitações ou pontos que não puderam ser padronizados entre os mercados.
+Quando a task depender de "elemento visível", diferenciar:
 
-## REGRA FINAL
+* elemento existente no DOM;
+* elemento visível;
+* elemento realmente interagível.
 
-Não implemente baseado apenas na descrição acima.
+Não considerar apenas presença no DOM como evidência de visibilidade.
 
-**Inspecione primeiro o código real do projeto, os Feature Tests, os Page Objects, os dados, a configuração dos mercados e a pipeline.**
+---
 
-As decisões de implementação devem ser baseadas na arquitetura existente.
+FASE 8 — EVIDÊNCIAS
 
-Antes de alterar arquivos, apresente um resumo do que você encontrou e o plano de alteração.
+As evidências são parte obrigatória da execução.
 
-Depois da implementação, apresente:
+Para cada caso relevante, determinar qual evidência comprova o resultado.
 
-```text
-[DISCOVERY]
-O que foi encontrado.
+Exemplos:
 
-[IMPLEMENTATION]
-O que foi alterado.
+UI:
 
-[SMOKE COVERAGE]
-Quais Smoke Tests foram criados por mercado.
+* screenshot;
+* URL;
+* elemento;
+* estado observado.
 
-[DATA]
-Quais dados/SKUs foram utilizados.
+Analytics:
 
-[STABILITY]
-Quais waits/dependências/flakiness foram tratados.
+* request;
+* endpoint;
+* evento;
+* payload;
+* parâmetros;
+* timestamp/sequência quando disponível.
 
-[ZEPHYR]
-Quais IDs foram criados.
+Console:
 
-[PIPELINE]
-Quais alterações foram realizadas.
+* erro;
+* mensagem;
+* contexto.
 
-[VALIDATION]
-Quais testes foram executados e seus resultados.
+O agente deve evitar gerar evidência desnecessária.
 
-[OPEN ISSUES]
-O que ainda depende de decisão ou correção.
-```
+Cada evidência deve responder:
 
-**Prioridade geral:**
+"O que esta evidência prova?"
 
-Determinismo > Velocidade > Simplicidade > Cobertura mínima crítica.
+Exemplo:
 
-O Smoke deve fornecer um sinal confiável de saúde da aplicação, e não substituir a suíte de Feature Tests.
+Evidence:
+Network request
+
+Prova:
+O evento `add_to_cart` foi disparado após o clique no botão Comprar e contém `item_id=12345`.
+
+---
+
+FASE 9 — CHECKPOINT REGRESSIVO
+
+Executar os checkpoints definidos pelo plano.
+
+O checkpoint regressivo deve ser tratado como uma validação adicional e não como substituto do teste principal.
+
+Registrar separadamente:
+
+MAIN VALIDATION
+
+e
+
+REGRESSION CHECKPOINT
+
+Isso permite distinguir:
+
+* funcionalidade principal aprovada;
+* regressão aprovada;
+* regressão falhou;
+* regressão não executável.
+
+==================================================
+5. REGRAS DE DECISÃO
+====================
+
+O agente deverá utilizar os seguintes estados:
+
+PASS
+FAIL
+BLOCKED
+INCONCLUSIVE
+
+PASS:
+Quando todas as condições relevantes foram comprovadas.
+
+FAIL:
+Quando o comportamento observado contradiz explicitamente o esperado.
+
+BLOCKED:
+Quando não foi possível executar por ausência de condição necessária, acesso, ambiente, dados ou dependência externa.
+
+INCONCLUSIVE:
+Quando houve execução, mas as evidências disponíveis não permitem concluir com segurança.
+
+Nunca transformar BLOCKED em FAIL.
+
+Nunca transformar INCONCLUSIVE em PASS.
+
+Nunca assumir sucesso quando não houver evidência suficiente.
+
+==================================================
+6. REGRAS ESPECÍFICAS PARA ANALYTICS
+====================================
+
+Para cada evento esperado, gerar mentalmente a seguinte matriz:
+
+EVENTO
+AÇÃO QUE DEVE DISPARAR
+MOMENTO ESPERADO
+REQUEST OBSERVADA
+NOME DO EVENTO
+PARÂMETROS ESPERADOS
+VALORES ESPERADOS
+VALORES OBSERVADOS
+RESULTADO
+EVIDÊNCIA
+
+Exemplo:
+
+Event:
+add_to_cart
+
+Trigger:
+click "Comprar"
+
+Expected payload:
+item_id = SKU
+quantity = 1
+
+Observed:
+item_id = SKU123
+quantity = 1
+
+Result:
+PASS
+
+Evidence:
+Network request + screenshot do estado da página
+
+==================================================
+7. ANTI-FALSE-POSITIVE
+======================
+
+O agente deve ser extremamente conservador.
+
+Nunca retornar PASS somente porque:
+
+* o botão apareceu;
+* o clique funcionou;
+* uma request qualquer aconteceu;
+* uma request contendo "analytics" apareceu;
+* existe um evento parecido;
+* a página carregou.
+
+O agente deve comprovar a relação entre:
+
+AÇÃO → EVENTO → PAYLOAD
+
+Quando possível.
+
+Exemplo:
+
+ERRADO:
+
+"Request de Analytics encontrada. PASS."
+
+CORRETO:
+
+"O clique no CTA disparou uma request de Analytics contendo o evento `select_item`. O payload contém `item_id` correspondente ao produto exibido. PASS."
+
+==================================================
+8. EVIDÊNCIA DE FALHA
+=====================
+
+Quando houver FAIL, produzir uma evidência suficientemente clara para que outro QA consiga reproduzir o problema.
+
+Exemplo:
+
+FAIL
+
+Expected:
+event = add_to_cart
+
+Observed:
+event = product_click
+
+Action:
+Click on "Adicionar ao carrinho"
+
+URL:
+...
+
+Network:
+...
+
+Payload:
+...
+
+Evidence:
+...
+
+==================================================
+9. RESULTADO DE SAÍDA
+=====================
+
+A saída do agente deverá ser estruturada para ser consumida pelo Rovo.
+
+Utilizar, quando compatível com a arquitetura existente:
+
+{
+"status": "PASS | FAIL | BLOCKED | INCONCLUSIVE",
+
+"contexto_executado": "...",
+
+"condicionantes": [],
+
+"validacao": {
+"status": "...",
+"observacao": "..."
+},
+
+"casos_de_teste": [
+{
+"id": "...",
+"status": "PASS | FAIL | BLOCKED | INCONCLUSIVE",
+"resultado_observado": "...",
+"resultado_esperado": "..."
+}
+],
+
+"analytics": [
+{
+"evento": "...",
+"trigger": "...",
+"expected": {},
+"observed": {},
+"status": "PASS | FAIL | BLOCKED | INCONCLUSIVE"
+}
+],
+
+"snippets": [],
+
+"checkpoint_regressivo": [
+{
+"descricao": "...",
+"status": "..."
+}
+],
+
+"evidencias": [
+{
+"tipo": "screenshot | network | console | dom | url | payload",
+"descricao": "...",
+"localizacao": "..."
+}
+],
+
+"falhas": [],
+
+"proximo_passo": "..."
+}
+
+Mais importante que o formato exato é garantir que a saída seja:
+
+* determinística;
+* legível;
+* consumível por outro agente;
+* auditável;
+* baseada em evidência.
+
+==================================================
+10. ESTRUTURA DE EVIDÊNCIAS
+===========================
+
+Crie, se a arquitetura existente permitir, uma estrutura organizada de evidências.
+
+Exemplo:
+
+artifacts/
+wa-validator/ <task-id>/
+screenshots/
+network/
+console/
+reports/
+
+Não crie essa estrutura se o projeto já tiver uma estrutura equivalente.
+
+Nunca sobrescrever evidências de outra execução.
+
+Utilizar identificação por task/run quando possível.
+
+==================================================
+11. PLAYWRIGHT MCP
+==================
+
+O agente deverá utilizar as ferramentas MCP Playwright disponíveis neste ambiente.
+
+IMPORTANTE:
+
+Antes de implementar, descubra exatamente quais ferramentas estão disponíveis.
+
+Não invente nomes de tools.
+
+Inspecione a disponibilidade do MCP.
+
+Procure ferramentas relacionadas a:
+
+* browser;
+* navigation;
+* snapshot;
+* click;
+* fill;
+* keyboard;
+* locator;
+* screenshot;
+* network;
+* console;
+* tracing;
+* tabs/pages;
+* evaluation, quando disponível.
+
+Use somente tools realmente disponíveis.
+
+Priorize as ferramentas MCP em vez de executar comandos Playwright diretamente, caso esse seja o padrão arquitetural definido pelo projeto.
+
+==================================================
+12. SEGURANÇA
+=============
+
+O agente NÃO deve:
+
+* alterar código da aplicação;
+* alterar código de produção;
+* fazer commits;
+* criar PRs;
+* modificar testes existentes;
+* remover testes;
+* alterar configurações para esconder uma falha;
+* modificar dados de negócio sem autorização explícita;
+* executar ações destrutivas.
+
+O agente é um VALIDATOR.
+
+Seu objetivo é observar, executar e reportar.
+
+==================================================
+13. INTERAÇÃO COM O ROVO
+========================
+
+O Rovo deve ser considerado o agente orquestrador.
+
+O WA Validator Agent deve aceitar um plano produzido pelo Rovo.
+
+O agente deve ser capaz de responder claramente:
+
+1. O que foi executado?
+2. O que era esperado?
+3. O que aconteceu?
+4. Qual Analytics foi observado?
+5. O payload estava correto?
+6. O que passou?
+7. O que falhou?
+8. O que não pôde ser validado?
+9. Quais evidências foram produzidas?
+10. O que o Rovo deve fazer agora?
+
+==================================================
+14. FALLBACK
+============
+
+Se o agente não conseguir identificar:
+
+* URL;
+* ambiente;
+* elemento;
+* evento;
+* trigger;
+* payload esperado;
+* dado obrigatório;
+
+não inventar.
+
+Retornar:
+
+BLOCKED
+
+com:
+
+missing_information: [
+"..."
+]
+
+e explicar exatamente o que precisa ser fornecido.
+
+==================================================
+15. IMPLEMENTAÇÃO
+=================
+
+Agora execute o seguinte processo:
+
+ETAPA 1
+Analise a estrutura do projeto.
+
+ETAPA 2
+Identifique os agentes existentes e seus padrões.
+
+ETAPA 3
+Identifique como Healer, Adapter e Orchestrator são estruturados.
+
+ETAPA 4
+Identifique o MCP Playwright disponível.
+
+ETAPA 5
+Identifique como prompts/instructions/skills/tools são organizados.
+
+ETAPA 6
+Proponha internamente a arquitetura do WA Validator Agent.
+
+ETAPA 7
+Implemente o agente seguindo os padrões existentes.
+
+ETAPA 8
+Crie o contrato de entrada e saída.
+
+ETAPA 9
+Crie exemplos de execução.
+
+ETAPA 10
+Crie testes do próprio agente, se a arquitetura permitir.
+
+ETAPA 11
+Valide que o agente não interfere nos agentes existentes.
+
+ETAPA 12
+Execute uma validação de ponta a ponta simples utilizando Playwright MCP.
+
+==================================================
+16. CRITÉRIO DE ACEITE
+======================
+
+O trabalho somente será considerado concluído quando for possível demonstrar um fluxo equivalente a:
+
+INPUT:
+
+Task de WA contendo:
+
+* página;
+* ação;
+* evento esperado;
+* parâmetros esperados.
+
+↓
+
+WA Validator Agent
+
+↓
+
+abre a página
+
+↓
+
+executa a ação
+
+↓
+
+observa Network
+
+↓
+
+identifica o evento
+
+↓
+
+extrai payload
+
+↓
+
+compara Expected vs Observed
+
+↓
+
+captura evidência
+
+↓
+
+executa checkpoint regressivo
+
+↓
+
+retorna resultado estruturado
+
+↓
+
+OUTPUT:
+
+PASS / FAIL / BLOCKED / INCONCLUSIVE
+
+com:
+
+* casos executados;
+* Analytics observado;
+* payload esperado;
+* payload observado;
+* evidências;
+* falhas;
+* próximo passo.
+
+==================================================
+17. PRINCÍPIO FUNDAMENTAL
+=========================
+
+Este agente não deve ser um "chatbot que diz se parece correto".
+
+Ele deve funcionar como um QA Automation Engineer executando uma validação baseada em evidências.
+
+Regra principal:
+
+NO EVIDENCE = NO PASS.
+
+E:
+
+DO NOT GUESS.
+
+Antes de começar a implementação, inspecione o projeto e me informe:
+
+1. arquitetura encontrada;
+2. agentes existentes;
+3. ferramentas MCP Playwright disponíveis;
+4. arquivos que serão criados/alterados;
+5. como o novo agente será integrado ao padrão atual.
+
+Depois disso, implemente.
