@@ -1,369 +1,441 @@
-# PROMPT — CRIAÇÃO DO WA VALIDATOR AGENT
 
-## 1. PAPEL DO AGENTE
+# PROMPT DE MELHORIA — WA VALIDATOR AGENT
+## PDF EXECUTIVO, SUMÁRIO DO CARD E CONSOLIDAÇÃO DE EVIDÊNCIAS
 
-Você é um **Senior QA Automation Engineer especializado em Web Analytics, Playwright, MCP, validação de eventos, Network, Console, DOM e evidências de execução**.
+O agente WA Validator já está implementado e funcional.
 
-Sua responsabilidade é criar, dentro deste projeto, um novo agente especializado em **executar e validar testes de Web Analytics/WA utilizando Playwright MCP**.
+**Não recrie o agente, não reestruture sua arquitetura e não substitua o comportamento atual que já está funcionando.**
 
-Esse agente deve receber como entrada um contexto/plano de validação já estruturado e transformá-lo em uma execução real no navegador.
+Esta etapa tem como objetivo evoluir o agente existente, adicionando principalmente uma camada de **consolidação, documentação e geração de evidências em PDF**.
 
-O agente deve:
+A regra é:
 
-**RECEBER → ENTENDER → EXECUTAR → OBSERVAR → VALIDAR → COMPROVAR → REPORTAR**
-
-A execução deve ser baseada em evidências reais observadas durante o teste.
+> **A execução atual continua sendo a fonte das evidências. O PDF passa a ser o artefato final consolidado dessa execução.**
 
 ---
 
-# 2. IMPORTANTE — O AGENTE DE ENTRADA NÃO FAZ PARTE DA ARQUITETURA
+# 1. OBJETIVO DA MELHORIA
 
-Este novo agente receberá como entrada a saída de outro agente, que atualmente é um agente desenvolvido no Rovo.
+Sempre que o agente finalizar uma execução de validação, ele deverá gerar obrigatoriamente um **PDF de evidência da execução**.
 
-As diretrizes desse agente de entrada serão disponibilizadas abaixo apenas para que você compreenda:
+Esse PDF deve ser adequado para:
 
-* qual tipo de contexto chegará;
-* como as informações serão estruturadas;
-* quais informações estarão disponíveis;
-* como os casos de teste serão descritos;
-* quais informações de WA/Analytics serão fornecidas;
-* quais checkpoints poderão ser solicitados;
-* quais evidências poderão ser esperadas.
+- anexar ao card/ticket;
+- compartilhar com QA, PO, Dev e demais envolvidos;
+- comprovar o resultado da validação;
+- registrar os testes realizados;
+- registrar evidências técnicas;
+- documentar screenshots;
+- documentar Network/payloads;
+- registrar problemas encontrados;
+- diferenciar claramente o objetivo principal do card de achados secundários.
 
-### NÃO IMPLEMENTAR O AGENTE DE ENTRADA.
+O PDF não deve ser apenas um dump técnico das informações coletadas.
 
-### NÃO RECRIAR O ROVO.
-
-### NÃO CRIAR UMA ARQUITETURA DE COMUNICAÇÃO ENTRE DOIS AGENTES.
-
-### NÃO CRIAR UM ORQUESTRADOR ENTRE O ROVO E ESTE AGENTE.
-
-O Rovo simplesmente será a origem da entrada.
-
-Para este projeto, considere que:
-
-**INPUT DO NOVO AGENTE = OUTPUT GERADO PELO AGENTE DE ENTRADA**
-
-As informações abaixo existem exclusivamente para que você compreenda o contrato e o significado da entrada que este agente receberá.
+Ele deve funcionar como um **relatório executivo + técnico da validação**.
 
 ---
 
-# 3. CONTEXTO DO AGENTE QUE FORNECE A ENTRADA
+# 2. PRINCÍPIO MAIS IMPORTANTE — CONTEXTO PRINCIPAL DO CARD
 
-Cole abaixo as diretrizes/configuração do agente Rovo que fornecerá a entrada:
+O agente precisa identificar e preservar o **objetivo principal da validação**.
+
+O sumário executivo deve responder primeiro:
+
+> **"O principal objetivo deste card foi validado? O problema principal foi resolvido?"**
+
+Não permitir que achados secundários dominem o resultado principal.
+
+Por exemplo:
+
+### Contexto do card
+
+O objetivo principal era validar que determinado evento de Analytics **não fosse disparado duas vezes** após uma determinada ação.
+
+Durante a execução, o agente também identificou:
+
+- parâmetros incorretos;
+- estrutura de payload inadequada;
+- informações indevidas no dataLayer;
+- CEP sendo exposto no componente legado;
+- outros problemas de implementação.
+
+Nesse cenário, o resumo **não deve simplesmente dizer**:
+
+> "A validação apresentou problemas no Analytics."
+
+O correto seria algo conceitualmente semelhante a:
+
+> **Resultado principal: VALIDADO.**  
+> O objetivo principal do card, que consistia em garantir que o evento não fosse disparado mais de uma vez após a ação do usuário, foi validado com sucesso. Durante a mesma execução, foram identificados achados secundários relacionados à estrutura dos eventos e à exposição de dados no dataLayer, que não impedem a conclusão positiva do objetivo principal, mas devem ser tratados separadamente.
+
+O agente deve manter essa hierarquia de informação.
+
+---
+
+# 3. HIERARQUIA DOS RESULTADOS
+
+Todo resultado deve ser classificado em três níveis:
+
+## Nível 1 — Objetivo principal do card
+
+É o requisito central que motivou a validação.
+
+Exemplos:
+
+- evento não pode disparar duas vezes;
+- evento deve ser disparado ao clicar no botão;
+- parâmetro X deve possuir determinado valor;
+- determinada funcionalidade deve gerar determinada comunicação;
+- determinado problema reportado no card deve estar corrigido.
+
+O PDF deve deixar o resultado desse objetivo **extremamente claro**.
+
+---
+
+## Nível 2 — Critérios secundários de validação
+
+São outros critérios que fazem parte do escopo da validação e que foram verificadas durante a execução.
+
+Exemplo:
+
+- nome do evento;
+- quantidade de requests;
+- parâmetros;
+- valores;
+- endpoint;
+- relacionamento com produto;
+- comportamento do dataLayer.
+
+Esses pontos devem aparecer na **matriz de testes** e nas evidências técnicas.
+
+---
+
+## Nível 3 — Achados adicionais
+
+São problemas, riscos ou comportamentos encontrados durante a investigação que:
+
+- não eram o objetivo principal do card;
+- não necessariamente impedem o resultado principal;
+- podem demandar correção;
+- devem ser registrados para conhecimento do time.
+
+Esses achados devem ser claramente classificados como:
+
+**ACHADO SECUNDÁRIO**
+
+ou
+
+**OBSERVAÇÃO / RISCO IDENTIFICADO**
+
+Nunca misturar esses achados com o resultado principal.
+
+---
+
+# 4. CLASSIFICAÇÃO DOS ACHADOS
+
+Sempre que identificar algo fora do objetivo principal, avalie:
+
+### A. Faz parte do objetivo principal?
+
+Se sim:
+
+**CRITÉRIO PRINCIPAL**
+
+### B. Faz parte de outro critério explicitamente solicitado?
+
+Se sim:
+
+**CRITÉRIO SECUNDÁRIO**
+
+### C. Foi descoberto durante a investigação, mas não fazia parte do escopo principal?
+
+Se sim:
+
+**ACHADO ADICIONAL**
+
+### D. É um risco técnico ou de segurança/compliance?
+
+Se sim, destacar claramente como:
+
+**RISCO IDENTIFICADO**
+
+---
+
+# 5. EXEMPLO — DUPLICIDADE DE EVENTO
+
+Considere:
+
+### Objetivo principal
+
+Validar que o evento `add_to_cart` não seja disparado duas vezes.
+
+### Resultado observado
+
+Após uma ação do usuário:
 
 ```text
-================ INÍCIO DAS DIRETRIZES DO AGENTE DE ENTRADA ================
+Expected:
+1 evento add_to_cart
 
-[COLE AQUI AS DIRETRIZES / INSTRUCTIONS DO AGENTE ROVO]
-
-================= FIM DAS DIRETRIZES DO AGENTE DE ENTRADA =================
+Observed:
+1 evento add_to_cart
 ```
 
-### REGRA
+Resultado:
 
-Use esse conteúdo somente para compreender:
+**PASS — objetivo principal validado.**
 
-* como o contexto é analisado;
-* quais informações são produzidas;
-* quais condicionantes podem existir;
-* como os casos de teste são descritos;
-* como snippets podem ser apresentados;
-* como o checkpoint regressivo é definido;
-* quais evidências podem ser solicitadas;
-* qual próximo passo pode ser indicado;
-* quais informações o executor receberá.
-
-Não copie a arquitetura desse agente.
-
-Não implemente suas responsabilidades.
-
-Não transforme esse agente em parte da arquitetura deste projeto.
-
----
-
-# 4. OBJETIVO DO NOVO AGENTE
-
-O novo agente deve ser responsável pela **execução prática e validação técnica** do contexto recebido.
-
-Ele não deve começar necessariamente entendendo um ticket inteiro do zero.
-
-Ele receberá informações já organizadas, podendo conter:
-
-* contexto;
-* objetivo da validação;
-* condicionantes;
-* status de viabilidade;
-* ambiente;
-* URL;
-* precondições;
-* casos de teste;
-* ações;
-* resultados esperados;
-* snippets;
-* eventos de Analytics;
-* parâmetros esperados;
-* checkpoints regressivos;
-* evidências esperadas;
-* próximo passo.
-
-A responsabilidade do agente é transformar essas informações em uma **execução real no navegador**, utilizando Playwright MCP e os mecanismos de observabilidade disponíveis.
-
----
-
-# 5. PRINCÍPIO DE ESCOPO
-
-A entrada recebida é a autoridade sobre **O QUE deve ser validado**.
-
-O agente pode decidir **COMO executar tecnicamente a validação**.
-
-Por exemplo, o agente pode decidir:
-
-* qual locator utilizar;
-* qual estratégia de espera utilizar;
-* como encontrar um elemento;
-* como correlacionar uma ação com uma request;
-* como observar Network;
-* como capturar Console;
-* qual screenshot produzir;
-* como organizar as evidências.
-
-Porém, não deve inventar novos requisitos funcionais.
-
-Não deve inventar:
-
-* URL;
-* ambiente;
-* evento;
-* trigger;
-* parâmetro;
-* valor esperado;
-* SKU;
-* produto;
-* elemento;
-* precondição;
-* dado de teste.
-
-Se uma informação essencial estiver ausente, o agente deve retornar:
-
-**BLOCKED**
-
-e informar exatamente qual informação está faltando.
-
----
-
-# 6. INSPEÇÃO OBRIGATÓRIA ANTES DA IMPLEMENTAÇÃO
-
-Antes de criar ou modificar qualquer arquivo, analise o projeto atual.
-
-Primeiro, investigue:
-
-1. Estrutura de diretórios.
-2. Arquitetura existente.
-3. Agente Healer.
-4. Agente Adapter.
-5. Agente Orchestrator.
-6. Prompts/instructions existentes.
-7. Skills existentes.
-8. MCPs configurados.
-9. Configuração do Playwright.
-10. Testes existentes.
-11. Estratégia atual de geração de evidências.
-12. Convenções de nomes.
-13. Padrões de logs.
-14. Padrões de output.
-15. Scripts disponíveis.
-16. Como os agentes existentes recebem entrada.
-17. Como os agentes existentes retornam resultado.
-18. Como artefatos são armazenados.
-19. Como o projeto executa Playwright.
-20. Quais ferramentas do Playwright MCP estão realmente disponíveis.
-
-Não assuma que uma ferramenta existe.
-
-Inspecione a configuração real do projeto.
-
----
-
-# 7. PADRÃO ARQUITETURAL
-
-O novo agente deve seguir os padrões já utilizados pelo projeto.
-
-Observe principalmente o padrão do:
-
-* Healer;
-* Adapter;
-* Orchestrator.
-
-Reutilize conceitos e estruturas existentes quando fizer sentido.
-
-Não introduza uma arquitetura complexa sem necessidade.
-
-O agente deve ser independente e possuir uma responsabilidade clara:
-
-> **Executar e validar contextos de QA/WA recebidos utilizando Playwright MCP e produzir evidências auditáveis.**
-
----
-
-# 8. PLAYWRIGHT MCP
-
-O Playwright MCP será o principal mecanismo de execução no navegador.
-
-Antes de implementar, identifique exatamente quais ferramentas estão disponíveis.
-
-Procure recursos relacionados a:
-
-* navegação;
-* páginas/tabs;
-* snapshot;
-* DOM;
-* locators;
-* click;
-* fill;
-* keyboard;
-* screenshot;
-* Network;
-* requests;
-* responses;
-* Console;
-* tracing;
-* evaluate;
-* observabilidade;
-* demais recursos disponíveis.
-
-### REGRA
-
-Não invente nomes de ferramentas MCP.
-
-Utilize somente ferramentas efetivamente disponíveis no ambiente.
-
-Se determinada capacidade não existir, o agente deve reconhecer a limitação e adaptar a execução sem inventar resultados.
-
----
-
-# 9. FLUXO PRINCIPAL DE EXECUÇÃO
-
-O fluxo principal deve ser:
+Porém, durante a mesma execução:
 
 ```text
-INPUT RECEBIDO
-      ↓
-INTERPRETAÇÃO DO PLANO
-      ↓
-VALIDAÇÃO DAS PRECONDIÇÕES
-      ↓
-ABERTURA DO AMBIENTE
-      ↓
-EXECUÇÃO DA AÇÃO
-      ↓
-OBSERVAÇÃO DO COMPORTAMENTO
-      ↓
-OBSERVAÇÃO DE NETWORK / CONSOLE / DOM
-      ↓
-IDENTIFICAÇÃO DA COMUNICAÇÃO WA
-      ↓
-VALIDAÇÃO DO EVENTO
-      ↓
-VALIDAÇÃO DO PAYLOAD
-      ↓
-COMPARAÇÃO EXPECTED × ACTUAL
-      ↓
-CHECKPOINT REGRESSIVO
-      ↓
-GERAÇÃO DAS EVIDÊNCIAS
-      ↓
-GERAÇÃO DOS ARTEFATOS
-      ↓
-RELATÓRIO FINAL
+Achado secundário:
+O payload contém um parâmetro enviado com estrutura incorreta.
+
+Risco adicional:
+Foi identificado CEP informado pelo usuário sendo disponibilizado no dataLayer de um componente legado.
+```
+
+O PDF deve apresentar:
+
+```text
+OBJETIVO PRINCIPAL
+PASS
+O evento não foi disparado em duplicidade.
+
+ACHADOS SECUNDÁRIOS
+1. Estrutura incorreta de determinado parâmetro.
+2. CEP exposto no dataLayer do componente legado.
+
+CONCLUSÃO
+O objetivo principal do card foi validado com sucesso.
+Os achados secundários devem ser avaliados/corrigidos separadamente.
 ```
 
 ---
 
-# 10. VALIDAÇÃO DE WEB ANALYTICS
+# 6. PRIVACIDADE / LGPD
 
-Para validações de WA/Analytics, utilize como princípio:
+Quando o agente identificar dados potencialmente sensíveis ou pessoais sendo enviados para:
 
-```text
-USER ACTION
-    ↓
-APPLICATION BEHAVIOR
-    ↓
-NETWORK REQUEST
-    ↓
-ANALYTICS EVENT
-    ↓
-PAYLOAD
-    ↓
-ASSERTION
-```
+- dataLayer;
+- Analytics;
+- Network;
+- payload;
+- Console;
+- DOM;
+- logs;
 
-O agente deve estabelecer a relação entre:
+isso deve ser destacado no PDF.
 
-**ação realizada → comunicação observada → evento → payload → resultado esperado**
+Exemplo:
 
-Não considere que o Analytics está funcionando apenas porque alguma request genérica foi realizada.
+> **RISCO DE PRIVACIDADE IDENTIFICADO**  
+> Foi observado dado informado pelo usuário sendo disponibilizado no dataLayer de um componente legado. O comportamento não fazia parte do objetivo principal da validação, porém representa um ponto de atenção de privacidade/compliance e deve ser avaliado pelo time responsável.
 
----
+### IMPORTANTE
 
-# 11. VALIDAÇÃO DO EVENTO
+O agente não deve afirmar juridicamente que algo é uma violação de LGPD apenas pela observação técnica, a menos que essa conclusão esteja explicitamente sustentada pelo contexto recebido.
 
-Para cada evento esperado, quando as informações estiverem disponíveis, valide:
+Preferir:
 
-* se o evento ocorreu;
-* qual ação disparou o evento;
-* se ocorreu no momento esperado;
-* quantidade de ocorrências;
-* nome do evento;
-* endpoint;
-* método HTTP;
-* query parameters;
-* request body;
-* payload;
-* parâmetros;
-* valores;
-* relação com produto;
-* relação com SKU;
-* relação com elemento;
-* relação com estado da aplicação.
+- "risco relacionado à exposição de dado pessoal";
+- "potencial risco de privacidade";
+- "dado pessoal observado no dataLayer";
+- "ponto de atenção para avaliação de LGPD/compliance".
 
-Quando houver um JSON/payload real, preserve a estrutura observada.
-
-Não reduza uma validação complexa para:
-
-> "Evento encontrado."
-
-O agente deve verificar se **o conteúdo do evento corresponde ao esperado**.
+Se o contexto recebido já classificar explicitamente o dado como uma violação ou requisito de LGPD, preservar essa classificação.
 
 ---
 
-# 12. EXPECTED × ACTUAL
+# 7. PDF OBRIGATÓRIO
 
-Sempre que houver informação suficiente, produza uma comparação explícita entre:
+Toda execução concluída deve gerar:
 
 ```text
-EXPECTED
-versus
-ACTUAL
+<nome-da-execucao>-validation-report.pdf
 ```
+
+O PDF deve ser um artefato real e persistido.
+
+Não basta retornar o conteúdo do relatório em texto.
+
+Não basta gerar Markdown.
+
+Não basta informar que o PDF poderia ser criado.
+
+O arquivo PDF deve efetivamente existir ao final da execução.
+
+---
+
+# 8. ESTRUTURA OBRIGATÓRIA DO PDF
+
+O PDF deve seguir, preferencialmente, esta estrutura:
+
+```text
+1. CAPA / IDENTIFICAÇÃO
+2. SUMÁRIO EXECUTIVO
+3. CONTEXTO E OBJETIVO DO CARD
+4. RESULTADO DO OBJETIVO PRINCIPAL
+5. MATRIZ DE TESTES
+6. RESULTADOS DOS TESTES
+7. EVIDÊNCIAS TÉCNICAS
+8. EVIDÊNCIAS DE NETWORK / ANALYTICS
+9. SCREENSHOTS
+10. ACHADOS SECUNDÁRIOS
+11. RISCOS / PONTOS DE ATENÇÃO
+12. CHECKPOINT REGRESSIVO
+13. CONCLUSÃO
+14. PRÓXIMOS PASSOS
+15. ÍNDICE / REFERÊNCIA DOS ARTEFATOS
+```
+
+Adaptar a estrutura caso o projeto já possua um padrão de relatório.
+
+---
+
+# 9. SUMÁRIO EXECUTIVO
+
+O sumário executivo é uma das partes mais importantes do PDF.
+
+Ele deve ser **curto, objetivo e orientado ao objetivo principal do card**.
+
+Deve responder:
+
+1. Qual era o objetivo principal?
+2. O objetivo foi validado?
+3. Qual foi o resultado observado?
+4. Existem achados secundários relevantes?
+5. Existe algum risco que precisa de atenção?
+
+Formato conceitual:
+
+```text
+SUMÁRIO EXECUTIVO
+
+Objetivo principal:
+Validar que o evento X não seja disparado em duplicidade após Y.
+
+Resultado:
+PASS
+
+Conclusão principal:
+O evento foi disparado uma única vez após a ação esperada, validando
+o objetivo principal do card.
+
+Achados secundários:
+- Estrutura incorreta no parâmetro X.
+- Dado pessoal observado no dataLayer legado.
+
+Status dos achados:
+Não impediram a validação do objetivo principal, mas requerem avaliação.
+```
+
+---
+
+# 10. NÃO POLUIR O SUMÁRIO
+
+O sumário executivo não deve listar todos os detalhes técnicos encontrados.
+
+Por exemplo, não colocar no resumo:
+
+- todos os parâmetros;
+- todos os headers;
+- todo o JSON;
+- todos os screenshots;
+- todos os logs;
+- todos os eventos;
+- detalhes internos de implementação.
+
+Essas informações pertencem às seções técnicas.
+
+O sumário deve permitir que um PO, gestor ou desenvolvedor entenda o resultado em poucos segundos.
+
+---
+
+# 11. MATRIZ DE TESTES
+
+Criar uma matriz estruturada:
+
+| ID | Cenário | Ação | Resultado Esperado | Resultado Observado | Status |
+|---|---|---|---|---|---|
+| TC-01 | Evento único | Executar ação | 1 evento | 1 evento | PASS |
+| TC-02 | Payload | Executar ação | Parâmetros corretos | Divergência X | FAIL |
+| TC-03 | DataLayer | Executar ação | Sem dado pessoal | CEP observado | FAIL / RISCO |
+
+A matriz deve refletir o que realmente foi executado.
+
+Não criar casos fictícios.
+
+---
+
+# 12. EVIDÊNCIAS TÉCNICAS
+
+As evidências já capturadas pelo agente devem ser reutilizadas.
+
+Não executar novamente o teste apenas para montar o PDF, salvo quando necessário.
+
+Incluir, quando disponível:
+
+- Network;
+- request;
+- response;
+- payload;
+- evento;
+- parâmetros;
+- DOM;
+- Console;
+- URL;
+- estado da aplicação;
+- screenshots;
+- demais artefatos.
+
+Cada evidência deve possuir uma breve explicação:
+
+> **O que esta evidência comprova?**
+
+Não simplesmente inserir uma imagem sem contexto.
+
+---
+
+# 13. NETWORK / PAYLOAD
+
+Para WA, criar uma seção específica.
 
 Exemplo:
 
 ```text
-Expected:
-event = add_to_cart
-item_id = 12345
-item_name = Produto X
+EVIDÊNCIA DE ANALYTICS
 
-Actual:
-event = add_to_cart
-item_id = 12345
-item_name = Produto X
+Evento:
+add_to_cart
 
-Result:
+Trigger:
+Clique em "Comprar"
+
+Ocorrências esperadas:
+1
+
+Ocorrências observadas:
+1
+
+Endpoint:
+...
+
+Payload:
+{
+  ...
+}
+
+Parâmetros relevantes:
+item_id: 12345
+quantity: 1
+
+Resultado:
 PASS
 ```
 
-Se houver divergência:
+Quando houver divergência:
 
 ```text
 Expected:
@@ -372,750 +444,346 @@ item_id = 12345
 Actual:
 item_id = undefined
 
-Result:
+Resultado:
 FAIL
 ```
 
 ---
 
-# 13. DOM E UI
+# 14. SCREENSHOTS
 
-Quando a validação envolver elementos da interface, diferencie:
+Screenshots devem ser inseridos no PDF de maneira organizada.
 
-* elemento existente;
-* elemento visível;
-* elemento habilitado;
-* elemento interagível;
-* elemento efetivamente acionado.
+Cada screenshot deve possuir:
 
-Não considerar apenas a existência no DOM como prova de que o usuário consegue interagir com o elemento.
-
----
-
-# 14. CONSOLE
-
-Utilize Console quando:
-
-* for solicitado;
-* houver erro relevante;
-* ajudar na investigação;
-* fizer parte da evidência necessária.
-
-Diferencie:
-
-* ERROR;
-* WARNING;
-* INFO;
-* logs irrelevantes.
-
-Não considere qualquer mensagem de Console como falha.
-
----
-
-# 15. CHECKPOINT REGRESSIVO
-
-Quando a entrada solicitar um checkpoint regressivo:
-
-* execute-o separadamente da validação principal;
-* registre o resultado;
-* produza evidência;
-* não misture o resultado do checkpoint com o resultado principal.
+- identificação;
+- contexto;
+- descrição;
+- relação com o teste.
 
 Exemplo:
 
 ```text
-Main Validation:
-PASS
+Figura 01 — Estado da página após execução do trigger.
 
-Regression Checkpoint:
+A imagem demonstra o estado da aplicação no momento em que o evento
+add_to_cart foi disparado.
+```
+
+Não inserir dezenas de screenshots redundantes.
+
+Priorizar screenshots que realmente comprovem o resultado.
+
+---
+
+# 15. ACHADOS SECUNDÁRIOS
+
+Criar uma seção específica:
+
+## ACHADOS SECUNDÁRIOS
+
+Para cada achado:
+
+```text
+Achado #01
+
+Descrição:
+...
+
+Contexto:
+...
+
+Evidência:
+...
+
+Impacto potencial:
+...
+
+Relação com o objetivo principal:
+Não bloqueia / Bloqueia / Requer avaliação
+
+Recomendação:
+...
+```
+
+O agente não deve transformar automaticamente todo achado secundário em uma falha do card.
+
+---
+
+# 16. SEPARAÇÃO ENTRE RESULTADO E ACHADO
+
+O PDF deve deixar visualmente clara a diferença entre:
+
+```text
+OBJETIVO PRINCIPAL
+```
+
+e
+
+```text
+ACHADOS SECUNDÁRIOS
+```
+
+Um achado secundário não deve alterar o status do objetivo principal automaticamente.
+
+Exemplo:
+
+```text
+Objetivo principal: PASS
+
+Achado secundário: RISCO IDENTIFICADO
+```
+
+Isso é diferente de:
+
+```text
+Objetivo principal: FAIL
+```
+
+O status do objetivo principal deve ser determinado exclusivamente pelos critérios que realmente definem o objetivo principal do card.
+
+---
+
+# 17. CONCLUSÃO
+
+A conclusão deve repetir de forma objetiva:
+
+### Objetivo principal
+
+**PASS / FAIL / BLOCKED / INCONCLUSIVE**
+
+### Resumo
+
+Uma explicação curta do motivo.
+
+### Achados secundários
+
+Lista dos principais pontos encontrados.
+
+### Riscos
+
+Lista dos riscos relevantes.
+
+### Próximos passos
+
+O que precisa acontecer depois.
+
+---
+
+# 18. REGRA DE CONSISTÊNCIA
+
+O PDF deve ser consistente com o resultado estruturado do agente.
+
+Não pode existir:
+
+```text
+Output:
 PASS
 ```
+
+e:
+
+```text
+PDF:
+FAIL
+```
+
+ou vice-versa.
+
+Se houver inconsistência entre os dados coletados e o relatório, o agente deve resolver a inconsistência antes de finalizar.
+
+---
+
+# 19. ARTEFATOS
+
+Ao finalizar, o agente deve informar claramente:
+
+```text
+Artifacts generated:
+
+✓ validation-report.pdf
+✓ screenshots/...
+✓ network/...
+✓ logs/...
+```
+
+O PDF deve ser o **artefato principal de consumo humano**.
+
+Os demais arquivos podem funcionar como evidências técnicas complementares.
+
+---
+
+# 20. REQUISITO DE PERSISTÊNCIA
+
+O agente deve descobrir e respeitar o mecanismo já utilizado pelo projeto para armazenar artefatos.
+
+Não criar armazenamento paralelo sem necessidade.
+
+O PDF deve ser salvo no mesmo contexto em que os demais artefatos da execução são armazenados, sempre que possível.
+
+O resultado final deve indicar o caminho/localização do arquivo.
+
+---
+
+# 21. PADRÃO VISUAL
+
+O PDF deve possuir aparência profissional e consistente.
+
+Priorizar:
+
+- título claro;
+- identificação da execução;
+- data/hora;
+- ambiente;
+- status;
+- seções bem separadas;
+- tabelas legíveis;
+- screenshots dimensionados adequadamente;
+- JSON/payload com formatação monoespaçada quando necessário;
+- quebra adequada de páginas;
+- cabeçalho/rodapé quando fizer sentido;
+- numeração de páginas;
+- identificação das evidências.
+
+Evitar:
+
+- páginas excessivamente vazias;
+- screenshots ilegíveis;
+- JSON cortado;
+- tabelas quebradas;
+- texto sobreposto;
+- conteúdo duplicado;
+- excesso de informação no sumário.
+
+---
+
+# 22. PRIORIDADE DA INFORMAÇÃO
+
+Ao montar o PDF, utilizar esta ordem de prioridade:
+
+```text
+1. OBJETIVO PRINCIPAL DO CARD
+2. RESULTADO DO OBJETIVO PRINCIPAL
+3. EVIDÊNCIA QUE COMPROVA O RESULTADO
+4. CRITÉRIOS SECUNDÁRIOS
+5. ACHADOS ADICIONAIS
+6. RISCOS
+7. DETALHES TÉCNICOS
+```
+
+O documento deve refletir essa hierarquia.
+
+---
+
+# 23. REGRA PARA ACHADOS NÃO RELACIONADOS
+
+Se durante a execução o agente encontrar algo interessante, mas fora do escopo principal:
+
+**não ignorar**, mas também **não deixar esse achado dominar a conclusão**.
+
+Registrar como:
+
+> Achado secundário
 
 ou:
 
-```text
-Main Validation:
-PASS
+> Ponto de atenção
 
-Regression Checkpoint:
-FAIL
-```
+ou:
 
-Nesse caso, não esconda a falha regressiva pelo fato de a validação principal ter passado.
+> Risco identificado
 
----
+conforme o caso.
 
-# 16. REQUISITO OBRIGATÓRIO — EVIDÊNCIAS
+Isso é especialmente importante quando o agente encontrar problemas relacionados a:
 
-O agente **NUNCA deve finalizar uma execução apenas informando PASS, FAIL, BLOCKED ou INCONCLUSIVE em texto**.
-
-Toda execução deve produzir **evidências materiais e persistidas**.
-
-Essas evidências devem poder ser utilizadas posteriormente como comprovação e vinculadas ao card/ticket correspondente.
-
-O objetivo é permitir que outra pessoa consiga verificar:
-
-* o que foi validado;
-* qual ação foi executada;
-* qual comportamento foi observado;
-* qual comunicação ocorreu;
-* qual evento foi identificado;
-* qual payload foi enviado;
-* quais parâmetros foram encontrados;
-* qual era o esperado;
-* qual foi o resultado real;
-* por que o agente chegou à conclusão apresentada.
+- privacidade;
+- dados pessoais;
+- payload;
+- dataLayer;
+- eventos adicionais;
+- performance;
+- comportamento inesperado;
+- inconsistências técnicas.
 
 ---
 
-# 17. TIPOS DE EVIDÊNCIA
+# 24. CHECKLIST FINAL DO PDF
 
-Sempre que aplicável, produzir:
-
-* screenshot da tela;
-* screenshot do estado do elemento;
-* screenshot após a ação;
-* evidência de Network;
-* URL da request;
-* método HTTP;
-* status code;
-* query parameters;
-* request payload/body;
-* response quando relevante;
-* nome do evento;
-* parâmetros do evento;
-* valores observados;
-* DOM/snapshot;
-* Console relevante;
-* URL da página;
-* estado da aplicação.
-
-Para Web Analytics, a evidência principal deve priorizar a **comunicação real observada**.
-
-Screenshot da UI é complementar.
-
----
-
-# 18. EVIDÊNCIA DE NETWORK E PAYLOAD
-
-Quando o teste envolver WA, o agente deve capturar a comunicação real observada.
-
-Sempre que possível, registrar:
+Antes de finalizar, validar:
 
 ```text
-Event:
-<event>
-
-Trigger:
-<ação>
-
-Endpoint:
-<endpoint>
-
-Method:
-<method>
-
-Status:
-<status>
-
-Query Parameters:
-<parameters>
-
-Payload:
-<JSON real observado>
-
-Expected:
-<esperado>
-
-Actual:
-<observado>
-
-Result:
-<PASS/FAIL/etc>
+[ ] PDF foi realmente gerado?
+[ ] PDF pode ser aberto?
+[ ] Objetivo principal está explícito?
+[ ] Resultado principal está explícito?
+[ ] Sumário é objetivo?
+[ ] Matriz de testes está presente?
+[ ] Casos executados estão registrados?
+[ ] Expected × Actual está documentado?
+[ ] Evidências de Network estão presentes quando aplicável?
+[ ] Payload/JSON está documentado quando aplicável?
+[ ] Screenshots relevantes estão presentes?
+[ ] Achados secundários estão separados?
+[ ] Riscos estão destacados?
+[ ] Checkpoint regressivo está documentado?
+[ ] Conclusão está consistente com a execução?
+[ ] Próximos passos estão presentes?
+[ ] Artefatos estão referenciados?
+[ ] Nenhum dado sensível foi exposto indevidamente?
+[ ] Nenhuma informação foi inventada?
+[ ] O PDF é legível?
+[ ] O PDF pode ser anexado ao ticket?
 ```
 
-Não substituir o JSON real por uma descrição genérica quando o payload estiver disponível.
+---
 
-Exemplo ruim:
+# 25. REGRA FINAL
+
+A partir desta melhoria, uma execução do WA Validator deve terminar com:
 
 ```text
-O evento foi enviado com os parâmetros corretos.
+EXECUTAR
+   ↓
+VALIDAR
+   ↓
+CAPTURAR EVIDÊNCIAS
+   ↓
+CLASSIFICAR RESULTADOS
+   ↓
+IDENTIFICAR OBJETIVO PRINCIPAL
+   ↓
+SEPARAR ACHADOS SECUNDÁRIOS
+   ↓
+CONSOLIDAR
+   ↓
+GERAR PDF
+   ↓
+PERSISTIR ARTEFATOS
+   ↓
+REPORTAR
 ```
 
-Exemplo adequado:
+O PDF deve ser tratado como o **relatório oficial daquela execução**.
 
-```text
-event: add_to_cart
-item_id: 12345
-item_name: Produto X
-price: 499.90
-```
-
-A estrutura real deve ser preservada sempre que possível.
-
----
-
-# 19. TRATAMENTO DE DADOS SENSÍVEIS
-
-Antes de persistir evidências, identifique possíveis:
-
-* tokens;
-* cookies sensíveis;
-* credenciais;
-* dados pessoais;
-* informações internas que não devem ser expostas.
-
-Mascare dados sensíveis quando necessário.
-
-Não remover informações relevantes para a comprovação do teste sem registrar que houve mascaramento.
-
----
-
-# 20. RELATÓRIO DE EXECUÇÃO
-
-Além das evidências brutas, o agente deve gerar um **relatório estruturado de execução**.
-
-O relatório deve conter, no mínimo:
-
-* identificação da execução;
-* contexto recebido;
-* ambiente;
-* URL;
-* caso de teste;
-* ação realizada;
-* resultado esperado;
-* resultado observado;
-* evento esperado;
-* evento observado;
-* endpoint;
-* método;
-* payload;
-* parâmetros;
-* comparação Expected × Actual;
-* status;
-* evidências;
-* artefatos;
-* falhas;
-* bloqueios;
-* observações;
-* checkpoint regressivo;
-* conclusão;
-* próximo passo.
-
-Utilize o padrão de relatório existente no projeto caso já exista.
-
-Não crie um formato paralelo sem necessidade.
-
----
-
-# 21. ARTEFATOS DA EXECUÇÃO
-
-A execução deve produzir arquivos persistidos que possam posteriormente ser anexados ou vinculados ao ticket.
-
-Exemplo conceitual:
-
-```text
-execution-report.<format>
-
-screenshots/
-    <step>-<description>.<format>
-
-network/
-    <event>-request.<format>
-
-logs/
-    <relevant-log>.<format>
-```
-
-Essa estrutura é apenas conceitual.
-
-Se o projeto já possuir uma convenção para artefatos, utilize-a.
-
-O mais importante é que os arquivos:
-
-1. sejam efetivamente gerados;
-2. sejam persistidos;
-3. tenham nomes identificáveis;
-4. possam ser localizados posteriormente;
-5. sejam referenciados no resultado final;
-6. possam ser utilizados como evidência no card/ticket.
-
----
-
-# 22. ARTEFATO FINAL ANEXÁVEL AO TICKET
-
-O resultado final deve informar claramente quais artefatos foram produzidos.
-
-Exemplo:
-
-```json
-{
-  "artefatos": [
-    {
-      "tipo": "execution-report",
-      "arquivo": "execution-report.json",
-      "descricao": "Relatório completo da execução"
-    },
-    {
-      "tipo": "screenshot",
-      "arquivo": "screenshots/add-to-cart.png",
-      "descricao": "Estado da página após o trigger"
-    },
-    {
-      "tipo": "network",
-      "arquivo": "network/add-to-cart-request.json",
-      "descricao": "Request contendo o evento e payload observado"
-    }
-  ]
-}
-```
-
-O formato final deve respeitar o padrão do projeto.
-
----
-
-# 23. EVIDÊNCIA DE PASS
-
-Um PASS só pode ser retornado quando houver evidência suficiente para comprovar o resultado.
-
-Exemplo:
-
-```text
-PASS
-
-Expected:
-add_to_cart
-item_id = 12345
-
-Actual:
-add_to_cart
-item_id = 12345
-
-Evidence:
-- Screenshot da ação
-- Request de Network
-- Payload observado
-- Expected × Actual report
-```
-
----
-
-# 24. EVIDÊNCIA DE FAIL
-
-Quando houver falha, a evidência deve permitir identificar exatamente a divergência.
-
-Exemplo:
-
-```text
-FAIL
-
-Expected:
-event = add_to_cart
-item_id = 12345
-
-Actual:
-event = add_to_cart
-item_id = undefined
-
-Evidence:
-- Screenshot
-- Network request
-- Payload
-- Expected × Actual
-```
-
-Nunca retornar apenas:
-
-> "WA não está funcionando."
-
----
-
-# 25. BLOCKED
-
-Se a execução não puder ser realizada por falta de uma informação ou condição essencial:
-
-```text
-BLOCKED
-```
-
-Deve informar:
-
-* o que estava sendo validado;
-* onde a execução parou;
-* motivo do bloqueio;
-* informação necessária;
-* evidências disponíveis até aquele momento.
-
-Mesmo em BLOCKED, produzir evidência do estado encontrado sempre que possível.
-
----
-
-# 26. INCONCLUSIVE
-
-Utilize INCONCLUSIVE quando houver execução parcial ou evidência insuficiente para determinar o resultado.
-
-Nunca transformar:
-
-**INCONCLUSIVE → PASS**
-
-apenas porque não foi encontrada uma falha.
-
-Nunca transformar:
-
-**BLOCKED → FAIL**
-
-quando não houver evidência de que a funcionalidade realmente falhou.
-
----
-
-# 27. REGRA ANTI-FALSO-POSITIVO
-
-A regra fundamental do agente é:
+A regra fundamental permanece:
 
 > **NO EVIDENCE = NO PASS**
 
-Não considere uma validação aprovada baseada apenas em:
+Mas agora acrescentamos:
 
-* aparência da interface;
-* ausência de erro visual;
-* existência de um elemento;
-* existência de alguma request;
-* resposta HTTP 200;
-* ausência de erro no Console;
-* suposição sobre implementação;
-* expectativa não comprovada.
+> **NO PDF = EXECUÇÃO INCOMPLETA**
 
-A conclusão deve estar sustentada por evidência observável.
+O objetivo é que qualquer pessoa que receba o PDF consiga entender rapidamente:
 
----
+**"O que o card queria validar?"**
 
-# 28. OUTPUT ESTRUTURADO
+**"Foi validado?"**
 
-O agente deve produzir um resultado estruturado semelhante ao seguinte:
+**"Qual evidência prova isso?"**
 
-```json
-{
-  "status": "PASS | FAIL | BLOCKED | INCONCLUSIVE",
+**"O que mais foi encontrado durante a execução?"**
 
-  "contexto_executado": "...",
+**"Existe algum risco ou ação adicional necessária?"**
 
-  "ambiente": "...",
-
-  "url": "...",
-
-  "casos_de_teste": [],
-
-  "analytics": [
-    {
-      "evento": "...",
-      "trigger": "...",
-
-      "expected": {
-        "event": "...",
-        "parameters": {}
-      },
-
-      "observed": {
-        "event": "...",
-        "parameters": {},
-        "endpoint": "...",
-        "method": "...",
-        "status_code": 200,
-        "payload": {}
-      },
-
-      "status": "PASS | FAIL | BLOCKED | INCONCLUSIVE"
-    }
-  ],
-
-  "checkpoint_regressivo": [],
-
-  "evidencias": [],
-
-  "artefatos": [],
-
-  "falhas": [],
-
-  "bloqueios": [],
-
-  "observacoes": [],
-
-  "conclusao": "...",
-
-  "proximo_passo": "..."
-}
-```
-
-Esse formato é apenas uma referência.
-
-Se o projeto já possuir um padrão de output, adapte-se a ele.
-
----
-
-# 29. VALIDAÇÃO DA COMPLETUDE ANTES DE FINALIZAR
-
-Antes de finalizar uma execução, faça um checklist interno:
-
-```text
-[ ] O teste realmente foi executado?
-[ ] O ambiente utilizado foi identificado?
-[ ] A URL foi registrada?
-[ ] O caso de teste foi identificado?
-[ ] A ação executada foi registrada?
-[ ] O resultado esperado foi registrado?
-[ ] O resultado observado foi registrado?
-[ ] O WA foi observado quando aplicável?
-[ ] A Network foi analisada quando aplicável?
-[ ] O evento foi identificado?
-[ ] O payload foi analisado?
-[ ] Expected × Actual foi realizado?
-[ ] O checkpoint regressivo foi executado quando solicitado?
-[ ] Evidências foram geradas?
-[ ] Artefatos foram persistidos?
-[ ] Os artefatos podem ser localizados?
-[ ] Os artefatos podem ser utilizados no ticket?
-[ ] O status final é sustentado pelas evidências?
-```
-
-Se uma evidência essencial estiver faltando, não finalize prematuramente.
-
-Produza a evidência faltante quando tecnicamente possível.
-
-Caso não seja possível, informe explicitamente a limitação.
-
----
-
-# 30. O QUE O AGENTE NÃO DEVE FAZER
-
-Não deve:
-
-* implementar o Rovo;
-* implementar outro agente de planejamento;
-* criar um agente intermediário;
-* criar comunicação artificial entre agentes;
-* interpretar Jira do zero quando o contexto já estiver estruturado;
-* inventar informações ausentes;
-* inventar ferramentas MCP;
-* considerar request genérica como prova de WA;
-* retornar PASS sem evidência;
-* substituir payload real por descrição quando o payload estiver disponível;
-* esconder falhas do checkpoint regressivo;
-* modificar testes sem necessidade;
-* alterar arquivos arbitrariamente;
-* produzir somente uma resposta textual quando deveria produzir um artefato.
-
----
-
-# 31. EXEMPLO DE EXECUÇÃO ESPERADA
-
-Considere que a entrada recebida contenha:
-
-```text
-URL:
-https://example.com/product/12345
-
-Caso:
-Adicionar produto ao carrinho
-
-Ação:
-Clicar no botão "Comprar"
-
-Evento esperado:
-add_to_cart
-
-Parâmetro esperado:
-item_id = 12345
-
-Evidência solicitada:
-Network + Screenshot
-```
-
-O agente deve:
-
-1. Abrir a URL.
-2. Validar que o produto está disponível.
-3. Localizar o botão.
-4. Registrar o estado necessário.
-5. Executar o clique.
-6. Observar a aplicação.
-7. Observar Network.
-8. Identificar a comunicação de Analytics.
-9. Identificar o evento.
-10. Extrair o payload.
-11. Validar `event`.
-12. Validar `item_id`.
-13. Comparar Expected × Actual.
-14. Capturar screenshot.
-15. Persistir a evidência Network/payload.
-16. Gerar o relatório.
-17. Retornar o status.
-18. Informar os artefatos gerados.
-
-Resultado esperado:
-
-```text
-PASS
-
-Event:
-add_to_cart
-
-Expected item_id:
-12345
-
-Observed item_id:
-12345
-
-Evidence:
-✓ Screenshot
-✓ Network request
-✓ Payload
-✓ Expected × Actual
-
-Artifacts:
-✓ execution-report
-✓ screenshot
-✓ network payload
-```
-
----
-
-# 32. CRITÉRIO DE ACEITAÇÃO DO AGENTE
-
-O agente será considerado corretamente implementado quando conseguir:
-
-1. Receber o contexto produzido pelo agente de entrada.
-2. Entender corretamente o contrato de entrada.
-3. Executar a validação utilizando Playwright MCP.
-4. Interagir com a aplicação.
-5. Observar Network/Console/DOM quando necessário.
-6. Identificar eventos de WA.
-7. Validar payloads e parâmetros.
-8. Correlacionar ações com eventos.
-9. Executar checkpoints regressivos.
-10. Diferenciar PASS, FAIL, BLOCKED e INCONCLUSIVE.
-11. Evitar falsos positivos.
-12. Produzir evidências materiais.
-13. Persistir os artefatos.
-14. Gerar relatório estruturado.
-15. Informar claramente os artefatos gerados.
-16. Produzir evidências que possam ser anexadas ou vinculadas ao ticket.
-17. Seguir os padrões existentes no projeto.
-
----
-
-# 33. PRIMEIRA ETAPA — NÃO IMPLEMENTE IMEDIATAMENTE
-
-Antes de criar arquivos ou alterar o projeto, faça uma análise inicial.
-
-Retorne:
-
-### 1. Estrutura atual do projeto
-
-Explique onde estão:
-
-* agentes;
-* prompts;
-* Playwright;
-* MCP;
-* testes;
-* scripts;
-* artefatos.
-
-### 2. Padrão do Healer
-
-Explique:
-
-* estrutura;
-* entrada;
-* processamento;
-* output;
-* arquivos relevantes.
-
-### 3. Padrão do Adapter
-
-Explique:
-
-* estrutura;
-* entrada;
-* processamento;
-* output;
-* arquivos relevantes.
-
-### 4. Padrão do Orchestrator
-
-Explique:
-
-* estrutura;
-* entrada;
-* processamento;
-* output;
-* arquivos relevantes.
-
-### 5. Playwright MCP
-
-Liste exatamente:
-
-* ferramentas disponíveis;
-* capacidades;
-* limitações;
-* configuração utilizada.
-
-### 6. Localização do novo agente
-
-Indique onde o novo agente deve ser criado e por quê.
-
-### 7. Contrato de entrada
-
-Com base nas diretrizes fornecidas na seção do agente de entrada, descreva exatamente qual estrutura este novo agente deverá receber.
-
-### 8. Contrato de saída
-
-Defina como:
-
-* resultado;
-* evidências;
-* artefatos;
-* relatório;
-* status
-
-serão retornados.
-
-### 9. Arquivos
-
-Liste:
-
-* arquivos a criar;
-* arquivos a modificar;
-* arquivos que não precisam ser modificados.
-
-### 10. Plano de implementação
-
-Apresente um plano objetivo antes de executar qualquer alteração.
-
-Somente depois dessa análise e planejamento implemente o agente.
-
----
-
-# 34. PRINCÍPIOS FINAIS
-
-O agente deve seguir estes princípios:
-
-> **RECEBER → ENTENDER → EXECUTAR → OBSERVAR → VALIDAR → COMPROVAR → REPORTAR**
-
-> **DO NOT GUESS.**
-
-> **NO EVIDENCE = NO PASS.**
-
-> **PASS precisa ser comprovável.**
-
-> **FAIL precisa ser diagnosticável.**
-
-> **BLOCKED precisa explicar o bloqueio.**
-
-> **INCONCLUSIVE precisa explicar a insuficiência de evidência.**
-
-> **Toda execução deve gerar artefato material.**
-
-O objetivo final não é simplesmente responder se o WA está funcionando.
-
-O objetivo é produzir uma **validação técnica reproduzível, auditável e comprovável**, com artefatos que possam ser utilizados como evidência no card/ticket.
+Sem precisar executar novamente o teste ou interpretar todo o log técnico.
