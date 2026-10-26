@@ -1,789 +1,219 @@
+# Melhoria do Agente de Web Analytics: Interceptação e Bloqueio de Eventos durante a Validação
 
-# PROMPT DE MELHORIA — WA VALIDATOR AGENT
-## PDF EXECUTIVO, SUMÁRIO DO CARD E CONSOLIDAÇÃO DE EVIDÊNCIAS
+## Contexto
 
-O agente WA Validator já está implementado e funcional.
+O agente de Web Analytics utiliza o Playwright MCP para interagir com o navegador, executar cenários de teste e validar os eventos de analytics gerados durante a navegação e as interações do usuário.
 
-**Não recrie o agente, não reestruture sua arquitetura e não substitua o comportamento atual que já está funcionando.**
+Atualmente, essas ações podem gerar requisições reais para endpoints de coleta de dados, fazendo com que os eventos produzidos durante a execução dos testes sejam contabilizados nas ferramentas de Web Analytics do site.
 
-Esta etapa tem como objetivo evoluir o agente existente, adicionando principalmente uma camada de **consolidação, documentação e geração de evidências em PDF**.
+O objetivo desta melhoria é permitir que o agente continue executando suas validações funcionais e analíticas, mas impeça que os eventos gerados exclusivamente para fins de teste sejam enviados aos serviços de coleta, evitando a contaminação das métricas reais do site.
 
-A regra é:
+## Objetivo
 
-> **A execução atual continua sendo a fonte das evidências. O PDF passa a ser o artefato final consolidado dessa execução.**
+Evoluir o agente para implementar um mecanismo de interceptação de requisições de Web Analytics, utilizando os recursos disponíveis no Playwright, de modo que:
 
----
+1. As ações de navegação e interação sejam executadas normalmente.
+2. As requisições relacionadas ao Web Analytics sejam interceptadas antes de serem enviadas ao destino.
+3. Os payloads sejam capturados e mantidos em memória para análise.
+4. Os eventos sejam validados conforme as diretrizes existentes de Web Analytics.
+5. As requisições identificadas como eventos de analytics sejam abortadas antes de chegarem aos endpoints de coleta.
+6. O agente produza evidências suficientes para demonstrar que os eventos foram capturados, validados e bloqueados.
 
-# 1. OBJETIVO DA MELHORIA
+## Diretrizes de implementação
 
-Sempre que o agente finalizar uma execução de validação, ele deverá gerar obrigatoriamente um **PDF de evidência da execução**.
+### 1. Analisar a arquitetura existente antes de realizar alterações
 
-Esse PDF deve ser adequado para:
+Antes de modificar qualquer arquivo, inspecione a implementação atual do agente, suas instruções, os fluxos de execução, as ferramentas disponíveis no Playwright MCP e as diretrizes de validação de Web Analytics.
 
-- anexar ao card/ticket;
-- compartilhar com QA, PO, Dev e demais envolvidos;
-- comprovar o resultado da validação;
-- registrar os testes realizados;
-- registrar evidências técnicas;
-- documentar screenshots;
-- documentar Network/payloads;
-- registrar problemas encontrados;
-- diferenciar claramente o objetivo principal do card de achados secundários.
+Identifique:
 
-O PDF não deve ser apenas um dump técnico das informações coletadas.
+- Como o agente inicia e controla o navegador.
+- Em qual etapa as interceptações de rede podem ser configuradas.
+- Quais endpoints, domínios, padrões de URL e tipos de requisição são utilizados para coleta de analytics.
+- Como os payloads são atualmente identificados, extraídos e validados.
+- Como os resultados e as evidências são apresentados ao usuário.
+- Se existem mecanismos de interceptação, mocks ou configurações de rede que possam ser reutilizados.
 
-Ele deve funcionar como um **relatório executivo + técnico da validação**.
+Preserve a arquitetura atual e reutilize as implementações existentes sempre que possível. Não substitua ferramentas, fluxos ou diretrizes sem necessidade.
 
----
+### 2. Interceptar requisições de Web Analytics
 
-# 2. PRINCÍPIO MAIS IMPORTANTE — CONTEXTO PRINCIPAL DO CARD
+Configure a interceptação de rede antes de iniciar as ações que possam gerar eventos analíticos.
 
-O agente precisa identificar e preservar o **objetivo principal da validação**.
+Utilize os mecanismos de roteamento e interceptação compatíveis com a versão e a arquitetura existentes do Playwright.
 
-O sumário executivo deve responder primeiro:
+A interceptação deve identificar as requisições de coleta de Web Analytics com base em critérios verificáveis, como endpoints conhecidos, domínios de coleta, padrões de URL, métodos HTTP e características dos payloads.
 
-> **"O principal objetivo deste card foi validado? O problema principal foi resolvido?"**
+Considere os diferentes mecanismos de envio utilizados pelo site, quando aplicáveis, incluindo:
 
-Não permitir que achados secundários dominem o resultado principal.
+- Requisições HTTP GET e POST.
+- Eventos enviados por `fetch` e `XMLHttpRequest`.
+- Requisições disparadas por bibliotecas e tags de analytics.
+- Payloads enviados por mecanismos como `sendBeacon`.
+- Eventos de navegação, page view, interação, comércio eletrônico e outras categorias contempladas pelas diretrizes existentes.
 
-Por exemplo:
+A cobertura de cada mecanismo deve ser confirmada tecnicamente. Não presuma que todos os tipos de requisição serão interceptados apenas porque uma rota HTTP foi configurada.
 
-### Contexto do card
+### 3. Capturar os payloads em memória
 
-O objetivo principal era validar que determinado evento de Analytics **não fosse disparado duas vezes** após uma determinada ação.
+Quando uma requisição de Web Analytics for identificada:
 
-Durante a execução, o agente também identificou:
+1. Capture as informações disponíveis da requisição antes de abortá-la.
+2. Extraia o payload conforme o formato utilizado, que pode incluir query parameters, JSON, formulários ou outros formatos suportados.
+3. Preserve os dados necessários para executar as validações existentes.
+4. Disponibilize o payload para o mecanismo de análise do agente sem depender de uma resposta real do serviço de analytics.
+5. Registre informações de diagnóstico, como endpoint, método, tipo de evento, horário relativo da captura e resultado da validação.
 
-- parâmetros incorretos;
-- estrutura de payload inadequada;
-- informações indevidas no dataLayer;
-- CEP sendo exposto no componente legado;
-- outros problemas de implementação.
+A captura deve ocorrer antes do bloqueio da requisição.
 
-Nesse cenário, o resumo **não deve simplesmente dizer**:
+Os payloads devem permanecer em memória durante a execução, sem serem enviados a serviços externos para análise. Evite persistir dados desnecessários ou potencialmente sensíveis.
 
-> "A validação apresentou problemas no Analytics."
+### 4. Bloquear o envio dos eventos
 
-O correto seria algo conceitualmente semelhante a:
+Após identificar e capturar uma requisição de Web Analytics, interrompa seu envio antes que ela alcance o endpoint de coleta.
 
-> **Resultado principal: VALIDADO.**  
-> O objetivo principal do card, que consistia em garantir que o evento não fosse disparado mais de uma vez após a ação do usuário, foi validado com sucesso. Durante a mesma execução, foram identificados achados secundários relacionados à estrutura dos eventos e à exposição de dados no dataLayer, que não impedem a conclusão positiva do objetivo principal, mas devem ser tratados separadamente.
+O bloqueio deve ocorrer por meio de abortamento da requisição ou mecanismo equivalente, conforme suportado pelo Playwright e pelo tipo de tráfego identificado.
 
-O agente deve manter essa hierarquia de informação.
+**É obrigatório que a validação do payload não dependa do envio efetivo do evento ao serviço de analytics.**
 
----
+O agente deve conseguir avaliar o conteúdo capturado mesmo quando a requisição não recebe uma resposta HTTP do servidor.
 
-# 3. HIERARQUIA DOS RESULTADOS
+Não substitua o bloqueio por uma estratégia que permita o envio real do evento e tente removê-lo posteriormente. A prevenção do envio é o requisito central desta melhoria.
 
-Todo resultado deve ser classificado em três níveis:
+### 5. Preservar o comportamento do site durante os testes
 
-## Nível 1 — Objetivo principal do card
+O bloqueio deve ser restrito às requisições de coleta de Web Analytics identificadas de forma confiável.
 
-É o requisito central que motivou a validação.
+Não bloqueie indiscriminadamente todas as requisições de rede, APIs de negócio, chamadas de catálogo, carrinho, checkout, autenticação, CMS ou outros serviços necessários para o funcionamento do site.
 
-Exemplos:
+Quando houver ambiguidade sobre a finalidade de uma requisição, não a classifique automaticamente como analytics apenas por conter palavras genéricas relacionadas a eventos ou rastreamento.
 
-- evento não pode disparar duas vezes;
-- evento deve ser disparado ao clicar no botão;
-- parâmetro X deve possuir determinado valor;
-- determinada funcionalidade deve gerar determinada comunicação;
-- determinado problema reportado no card deve estar corrigido.
+Implemente regras de identificação explícitas, revisáveis e compatíveis com os sites e as ferramentas já contemplados pelo agente.
 
-O PDF deve deixar o resultado desse objetivo **extremamente claro**.
+Caso seja necessário adicionar ou atualizar uma lista de endpoints, mantenha essa configuração centralizada e documentada.
 
----
+### 6. Executar as validações existentes
 
-## Nível 2 — Critérios secundários de validação
+Após capturar os payloads, execute as diretrizes de validação de Web Analytics já implementadas no agente.
 
-São outros critérios que fazem parte do escopo da validação e que foram verificadas durante a execução.
+Preserve os critérios existentes para avaliar, conforme aplicável:
 
-Exemplo:
+- Presença e obrigatoriedade de parâmetros.
+- Nome e tipo dos eventos.
+- Estrutura e integridade dos payloads.
+- Valores esperados e consistência dos campos.
+- Contexto da página e da interação que originou o evento.
+- Regras de negócio e requisitos específicos do cenário.
+- Eventos ausentes, duplicados ou inesperados.
+- Correspondência entre a ação realizada no navegador e o evento observado.
 
-- nome do evento;
-- quantidade de requests;
-- parâmetros;
-- valores;
-- endpoint;
-- relacionamento com produto;
-- comportamento do dataLayer.
+Não altere as regras de negócio, os critérios de aprovação ou os requisitos de WA apenas para adaptar a interceptação.
 
-Esses pontos devem aparecer na **matriz de testes** e nas evidências técnicas.
+O objetivo é mudar o mecanismo de captura e envio, mantendo a lógica de validação existente.
 
----
+### 7. Diferenciar validação analítica de envio real
 
-## Nível 3 — Achados adicionais
+Atualize o relatório de execução para deixar claro que os eventos foram validados em memória e tiveram o envio bloqueado.
 
-São problemas, riscos ou comportamentos encontrados durante a investigação que:
+Diferencie os seguintes resultados:
 
-- não eram o objetivo principal do card;
-- não necessariamente impedem o resultado principal;
-- podem demandar correção;
-- devem ser registrados para conhecimento do time.
+- **Validado:** o payload capturado atende aos critérios de Web Analytics.
+- **Falha de validação:** o payload capturado não atende aos critérios esperados.
+- **Evento esperado não observado:** o cenário foi executado, mas o evento esperado não foi capturado dentro das condições de espera definidas.
+- **Envio bloqueado:** a requisição de analytics foi interceptada e seu envio foi impedido.
+- **Proteção não confirmada:** não foi possível comprovar que o mecanismo de bloqueio estava ativo ou que cobria o endpoint identificado.
 
-Esses achados devem ser claramente classificados como:
+Não considere um cenário protegido contra contaminação de dados apenas porque o teste terminou com sucesso. A proteção precisa ser verificada de forma independente.
 
-**ACHADO SECUNDÁRIO**
+Se o mecanismo de interceptação falhar, não afirmar que os eventos foram bloqueados. Sinalize a falha e evite continuar a execução de cenários que possam enviar eventos reais sem a proteção necessária.
 
-ou
+## Estratégia de testes da implementação
 
-**OBSERVAÇÃO / RISCO IDENTIFICADO**
+Crie ou adapte testes para comprovar os seguintes comportamentos:
 
-Nunca misturar esses achados com o resultado principal.
+1. Um evento válido é capturado, validado e bloqueado.
+2. Um evento inválido é capturado, reprovado na validação e bloqueado da mesma forma.
+3. A ausência de um evento esperado é identificada corretamente.
+4. Requisições comuns necessárias para o funcionamento do site continuam sendo realizadas.
+5. Diferentes formatos de payload são processados corretamente quando suportados pela implementação.
+6. O agente consegue validar os dados sem receber uma resposta real do endpoint de analytics.
+7. A interceptação está ativa antes da primeira ação capaz de gerar eventos.
+8. Requisições de analytics originadas por navegação, interação e mecanismos de envio suportados são tratadas conforme as regras implementadas.
+9. Uma falha de configuração ou de interceptação não é apresentada como bloqueio bem-sucedido.
+10. O relatório diferencia eventos capturados, eventos validados e requisições efetivamente bloqueadas.
 
----
+Sempre que possível, utilize endpoints simulados ou ambientes controlados para verificar que as requisições bloqueadas não chegam ao destino. Não utilize endpoints de produção para testar se o bloqueio funciona.
 
-# 4. CLASSIFICAÇÃO DOS ACHADOS
+## Critérios de aceite
 
-Sempre que identificar algo fora do objetivo principal, avalie:
+A melhoria será considerada concluída quando:
 
-### A. Faz parte do objetivo principal?
+- A interceptação estiver configurada antes da execução dos cenários.
+- Os eventos de analytics forem capturados e disponibilizados para validação em memória.
+- O envio dos eventos identificados for impedido antes da chegada aos serviços de coleta.
+- As validações existentes de WA continuarem funcionando.
+- As APIs e funcionalidades de negócio necessárias aos testes permanecerem operacionais.
+- A execução apresentar evidências de captura, validação e bloqueio.
+- Falhas na proteção forem identificadas e reportadas explicitamente.
+- Os testes de regressão demonstrarem que a nova implementação não compromete o comportamento anterior do agente.
+- A documentação do agente for atualizada para refletir o novo fluxo.
 
-Se sim:
+## Restrições
 
-**CRITÉRIO PRINCIPAL**
+- Não reescreva o agente do zero.
+- Não remova nem simplifique as diretrizes existentes de Web Analytics.
+- Não altere os critérios de validação para fazer os cenários passarem.
+- Não permita que eventos de teste sejam enviados aos serviços reais de coleta.
+- Não bloqueie APIs de negócio por engano.
+- Não considere a interceptação comprovada sem evidências técnicas.
+- Não aplique alterações diretamente sem antes analisar a implementação e identificar os arquivos envolvidos.
 
-### B. Faz parte de outro critério explicitamente solicitado?
+## Entrega esperada
 
-Se sim:
+Implemente a melhoria na estrutura existente do agente e apresente:
 
-**CRITÉRIO SECUNDÁRIO**
+1. Resumo das alterações realizadas.
+2. Arquivos modificados e justificativa de cada alteração.
+3. Estratégia utilizada para identificar e interceptar os eventos.
+4. Como os payloads são capturados, armazenados em memória e validados.
+5. Como o bloqueio do envio é garantido e quais limitações técnicas permanecem.
+6. Evidências e resultados dos testes executados.
+7. Riscos residuais e pontos que exigem validação adicional.
 
-### C. Foi descoberto durante a investigação, mas não fazia parte do escopo principal?
+Antes de concluir, verifique se a solução realmente impede o envio das requisições de analytics nos mecanismos suportados, sem comprometer as funcionalidades do site. Se alguma limitação do Playwright MCP ou da arquitetura atual impedir uma garantia completa, documente-a explicitamente e não declare o requisito como atendido sem comprovação.
 
-Se sim:
 
-**ACHADO ADICIONAL**
+Um detalhe técnico importante
+Tem um ponto que eu faria questão de validar na implementação: interceptar uma rota no Playwright não garante, por si só, que todos os mecanismos de envio de analytics estarão cobertos.
 
-### D. É um risco técnico ou de segurança/compliance?
+Por exemplo, dependendo de como o site implementa o tracking, fetch e XMLHttpRequest podem ser tratados de uma maneira, enquanto navigator.sendBeacon, requisições iniciadas por service workers ou tráfego fora do contexto de rede interceptado podem exigir verificações adicionais.
 
-Se sim, destacar claramente como:
+Por isso, o prompt pede que o agente investigue a cobertura real do mecanismo antes de afirmar que está protegido.
 
-**RISCO IDENTIFICADO**
+Também recomendo manter a seguinte sequência operacional:
+1. Ativar a interceptação
 
----
+Antes de navegar ou interagir com o site
 
-# 5. EXEMPLO — DUPLICIDADE DE EVENTO
 
-Considere:
+2. Executar o cenário no navegador
 
-### Objetivo principal
+Manter as ações reais do teste via Playwright MCP
 
-Validar que o evento `add_to_cart` não seja disparado duas vezes.
 
-### Resultado observado
+3. Capturar o payload em memória
 
-Após uma ação do usuário:
+Extrair os campos necessários antes de abortar a requisição
 
-```text
-Expected:
-1 evento add_to_cart
 
-Observed:
-1 evento add_to_cart
-```
+4. Abortar o envio e validar
 
-Resultado:
+Impedir a coleta real e aplicar as diretrizes existentes de WA
 
-**PASS — objetivo principal validado.**
 
-Porém, durante a mesma execução:
+5. Gerar evidências
 
-```text
-Achado secundário:
-O payload contém um parâmetro enviado com estrutura incorreta.
+Resultado da validação, requisições bloqueadas e eventuais limitações
 
-Risco adicional:
-Foi identificado CEP informado pelo usuário sendo disponibilizado no dataLayer de um componente legado.
-```
 
-O PDF deve apresentar:
-
-```text
-OBJETIVO PRINCIPAL
-PASS
-O evento não foi disparado em duplicidade.
-
-ACHADOS SECUNDÁRIOS
-1. Estrutura incorreta de determinado parâmetro.
-2. CEP exposto no dataLayer do componente legado.
-
-CONCLUSÃO
-O objetivo principal do card foi validado com sucesso.
-Os achados secundários devem ser avaliados/corrigidos separadamente.
-```
-
----
-
-# 6. PRIVACIDADE / LGPD
-
-Quando o agente identificar dados potencialmente sensíveis ou pessoais sendo enviados para:
-
-- dataLayer;
-- Analytics;
-- Network;
-- payload;
-- Console;
-- DOM;
-- logs;
-
-isso deve ser destacado no PDF.
-
-Exemplo:
-
-> **RISCO DE PRIVACIDADE IDENTIFICADO**  
-> Foi observado dado informado pelo usuário sendo disponibilizado no dataLayer de um componente legado. O comportamento não fazia parte do objetivo principal da validação, porém representa um ponto de atenção de privacidade/compliance e deve ser avaliado pelo time responsável.
-
-### IMPORTANTE
-
-O agente não deve afirmar juridicamente que algo é uma violação de LGPD apenas pela observação técnica, a menos que essa conclusão esteja explicitamente sustentada pelo contexto recebido.
-
-Preferir:
-
-- "risco relacionado à exposição de dado pessoal";
-- "potencial risco de privacidade";
-- "dado pessoal observado no dataLayer";
-- "ponto de atenção para avaliação de LGPD/compliance".
-
-Se o contexto recebido já classificar explicitamente o dado como uma violação ou requisito de LGPD, preservar essa classificação.
-
----
-
-# 7. PDF OBRIGATÓRIO
-
-Toda execução concluída deve gerar:
-
-```text
-<nome-da-execucao>-validation-report.pdf
-```
-
-O PDF deve ser um artefato real e persistido.
-
-Não basta retornar o conteúdo do relatório em texto.
-
-Não basta gerar Markdown.
-
-Não basta informar que o PDF poderia ser criado.
-
-O arquivo PDF deve efetivamente existir ao final da execução.
-
----
-
-# 8. ESTRUTURA OBRIGATÓRIA DO PDF
-
-O PDF deve seguir, preferencialmente, esta estrutura:
-
-```text
-1. CAPA / IDENTIFICAÇÃO
-2. SUMÁRIO EXECUTIVO
-3. CONTEXTO E OBJETIVO DO CARD
-4. RESULTADO DO OBJETIVO PRINCIPAL
-5. MATRIZ DE TESTES
-6. RESULTADOS DOS TESTES
-7. EVIDÊNCIAS TÉCNICAS
-8. EVIDÊNCIAS DE NETWORK / ANALYTICS
-9. SCREENSHOTS
-10. ACHADOS SECUNDÁRIOS
-11. RISCOS / PONTOS DE ATENÇÃO
-12. CHECKPOINT REGRESSIVO
-13. CONCLUSÃO
-14. PRÓXIMOS PASSOS
-15. ÍNDICE / REFERÊNCIA DOS ARTEFATOS
-```
-
-Adaptar a estrutura caso o projeto já possua um padrão de relatório.
-
----
-
-# 9. SUMÁRIO EXECUTIVO
-
-O sumário executivo é uma das partes mais importantes do PDF.
-
-Ele deve ser **curto, objetivo e orientado ao objetivo principal do card**.
-
-Deve responder:
-
-1. Qual era o objetivo principal?
-2. O objetivo foi validado?
-3. Qual foi o resultado observado?
-4. Existem achados secundários relevantes?
-5. Existe algum risco que precisa de atenção?
-
-Formato conceitual:
-
-```text
-SUMÁRIO EXECUTIVO
-
-Objetivo principal:
-Validar que o evento X não seja disparado em duplicidade após Y.
-
-Resultado:
-PASS
-
-Conclusão principal:
-O evento foi disparado uma única vez após a ação esperada, validando
-o objetivo principal do card.
-
-Achados secundários:
-- Estrutura incorreta no parâmetro X.
-- Dado pessoal observado no dataLayer legado.
-
-Status dos achados:
-Não impediram a validação do objetivo principal, mas requerem avaliação.
-```
-
----
-
-# 10. NÃO POLUIR O SUMÁRIO
-
-O sumário executivo não deve listar todos os detalhes técnicos encontrados.
-
-Por exemplo, não colocar no resumo:
-
-- todos os parâmetros;
-- todos os headers;
-- todo o JSON;
-- todos os screenshots;
-- todos os logs;
-- todos os eventos;
-- detalhes internos de implementação.
-
-Essas informações pertencem às seções técnicas.
-
-O sumário deve permitir que um PO, gestor ou desenvolvedor entenda o resultado em poucos segundos.
-
----
-
-# 11. MATRIZ DE TESTES
-
-Criar uma matriz estruturada:
-
-| ID | Cenário | Ação | Resultado Esperado | Resultado Observado | Status |
-|---|---|---|---|---|---|
-| TC-01 | Evento único | Executar ação | 1 evento | 1 evento | PASS |
-| TC-02 | Payload | Executar ação | Parâmetros corretos | Divergência X | FAIL |
-| TC-03 | DataLayer | Executar ação | Sem dado pessoal | CEP observado | FAIL / RISCO |
-
-A matriz deve refletir o que realmente foi executado.
-
-Não criar casos fictícios.
-
----
-
-# 12. EVIDÊNCIAS TÉCNICAS
-
-As evidências já capturadas pelo agente devem ser reutilizadas.
-
-Não executar novamente o teste apenas para montar o PDF, salvo quando necessário.
-
-Incluir, quando disponível:
-
-- Network;
-- request;
-- response;
-- payload;
-- evento;
-- parâmetros;
-- DOM;
-- Console;
-- URL;
-- estado da aplicação;
-- screenshots;
-- demais artefatos.
-
-Cada evidência deve possuir uma breve explicação:
-
-> **O que esta evidência comprova?**
-
-Não simplesmente inserir uma imagem sem contexto.
-
----
-
-# 13. NETWORK / PAYLOAD
-
-Para WA, criar uma seção específica.
-
-Exemplo:
-
-```text
-EVIDÊNCIA DE ANALYTICS
-
-Evento:
-add_to_cart
-
-Trigger:
-Clique em "Comprar"
-
-Ocorrências esperadas:
-1
-
-Ocorrências observadas:
-1
-
-Endpoint:
-...
-
-Payload:
-{
-  ...
-}
-
-Parâmetros relevantes:
-item_id: 12345
-quantity: 1
-
-Resultado:
-PASS
-```
-
-Quando houver divergência:
-
-```text
-Expected:
-item_id = 12345
-
-Actual:
-item_id = undefined
-
-Resultado:
-FAIL
-```
-
----
-
-# 14. SCREENSHOTS
-
-Screenshots devem ser inseridos no PDF de maneira organizada.
-
-Cada screenshot deve possuir:
-
-- identificação;
-- contexto;
-- descrição;
-- relação com o teste.
-
-Exemplo:
-
-```text
-Figura 01 — Estado da página após execução do trigger.
-
-A imagem demonstra o estado da aplicação no momento em que o evento
-add_to_cart foi disparado.
-```
-
-Não inserir dezenas de screenshots redundantes.
-
-Priorizar screenshots que realmente comprovem o resultado.
-
----
-
-# 15. ACHADOS SECUNDÁRIOS
-
-Criar uma seção específica:
-
-## ACHADOS SECUNDÁRIOS
-
-Para cada achado:
-
-```text
-Achado #01
-
-Descrição:
-...
-
-Contexto:
-...
-
-Evidência:
-...
-
-Impacto potencial:
-...
-
-Relação com o objetivo principal:
-Não bloqueia / Bloqueia / Requer avaliação
-
-Recomendação:
-...
-```
-
-O agente não deve transformar automaticamente todo achado secundário em uma falha do card.
-
----
-
-# 16. SEPARAÇÃO ENTRE RESULTADO E ACHADO
-
-O PDF deve deixar visualmente clara a diferença entre:
-
-```text
-OBJETIVO PRINCIPAL
-```
-
-e
-
-```text
-ACHADOS SECUNDÁRIOS
-```
-
-Um achado secundário não deve alterar o status do objetivo principal automaticamente.
-
-Exemplo:
-
-```text
-Objetivo principal: PASS
-
-Achado secundário: RISCO IDENTIFICADO
-```
-
-Isso é diferente de:
-
-```text
-Objetivo principal: FAIL
-```
-
-O status do objetivo principal deve ser determinado exclusivamente pelos critérios que realmente definem o objetivo principal do card.
-
----
-
-# 17. CONCLUSÃO
-
-A conclusão deve repetir de forma objetiva:
-
-### Objetivo principal
-
-**PASS / FAIL / BLOCKED / INCONCLUSIVE**
-
-### Resumo
-
-Uma explicação curta do motivo.
-
-### Achados secundários
-
-Lista dos principais pontos encontrados.
-
-### Riscos
-
-Lista dos riscos relevantes.
-
-### Próximos passos
-
-O que precisa acontecer depois.
-
----
-
-# 18. REGRA DE CONSISTÊNCIA
-
-O PDF deve ser consistente com o resultado estruturado do agente.
-
-Não pode existir:
-
-```text
-Output:
-PASS
-```
-
-e:
-
-```text
-PDF:
-FAIL
-```
-
-ou vice-versa.
-
-Se houver inconsistência entre os dados coletados e o relatório, o agente deve resolver a inconsistência antes de finalizar.
-
----
-
-# 19. ARTEFATOS
-
-Ao finalizar, o agente deve informar claramente:
-
-```text
-Artifacts generated:
-
-✓ validation-report.pdf
-✓ screenshots/...
-✓ network/...
-✓ logs/...
-```
-
-O PDF deve ser o **artefato principal de consumo humano**.
-
-Os demais arquivos podem funcionar como evidências técnicas complementares.
-
----
-
-# 20. REQUISITO DE PERSISTÊNCIA
-
-O agente deve descobrir e respeitar o mecanismo já utilizado pelo projeto para armazenar artefatos.
-
-Não criar armazenamento paralelo sem necessidade.
-
-O PDF deve ser salvo no mesmo contexto em que os demais artefatos da execução são armazenados, sempre que possível.
-
-O resultado final deve indicar o caminho/localização do arquivo.
-
----
-
-# 21. PADRÃO VISUAL
-
-O PDF deve possuir aparência profissional e consistente.
-
-Priorizar:
-
-- título claro;
-- identificação da execução;
-- data/hora;
-- ambiente;
-- status;
-- seções bem separadas;
-- tabelas legíveis;
-- screenshots dimensionados adequadamente;
-- JSON/payload com formatação monoespaçada quando necessário;
-- quebra adequada de páginas;
-- cabeçalho/rodapé quando fizer sentido;
-- numeração de páginas;
-- identificação das evidências.
-
-Evitar:
-
-- páginas excessivamente vazias;
-- screenshots ilegíveis;
-- JSON cortado;
-- tabelas quebradas;
-- texto sobreposto;
-- conteúdo duplicado;
-- excesso de informação no sumário.
-
----
-
-# 22. PRIORIDADE DA INFORMAÇÃO
-
-Ao montar o PDF, utilizar esta ordem de prioridade:
-
-```text
-1. OBJETIVO PRINCIPAL DO CARD
-2. RESULTADO DO OBJETIVO PRINCIPAL
-3. EVIDÊNCIA QUE COMPROVA O RESULTADO
-4. CRITÉRIOS SECUNDÁRIOS
-5. ACHADOS ADICIONAIS
-6. RISCOS
-7. DETALHES TÉCNICOS
-```
-
-O documento deve refletir essa hierarquia.
-
----
-
-# 23. REGRA PARA ACHADOS NÃO RELACIONADOS
-
-Se durante a execução o agente encontrar algo interessante, mas fora do escopo principal:
-
-**não ignorar**, mas também **não deixar esse achado dominar a conclusão**.
-
-Registrar como:
-
-> Achado secundário
-
-ou:
-
-> Ponto de atenção
-
-ou:
-
-> Risco identificado
-
-conforme o caso.
-
-Isso é especialmente importante quando o agente encontrar problemas relacionados a:
-
-- privacidade;
-- dados pessoais;
-- payload;
-- dataLayer;
-- eventos adicionais;
-- performance;
-- comportamento inesperado;
-- inconsistências técnicas.
-
----
-
-# 24. CHECKLIST FINAL DO PDF
-
-Antes de finalizar, validar:
-
-```text
-[ ] PDF foi realmente gerado?
-[ ] PDF pode ser aberto?
-[ ] Objetivo principal está explícito?
-[ ] Resultado principal está explícito?
-[ ] Sumário é objetivo?
-[ ] Matriz de testes está presente?
-[ ] Casos executados estão registrados?
-[ ] Expected × Actual está documentado?
-[ ] Evidências de Network estão presentes quando aplicável?
-[ ] Payload/JSON está documentado quando aplicável?
-[ ] Screenshots relevantes estão presentes?
-[ ] Achados secundários estão separados?
-[ ] Riscos estão destacados?
-[ ] Checkpoint regressivo está documentado?
-[ ] Conclusão está consistente com a execução?
-[ ] Próximos passos estão presentes?
-[ ] Artefatos estão referenciados?
-[ ] Nenhum dado sensível foi exposto indevidamente?
-[ ] Nenhuma informação foi inventada?
-[ ] O PDF é legível?
-[ ] O PDF pode ser anexado ao ticket?
-```
-
----
-
-# 25. REGRA FINAL
-
-A partir desta melhoria, uma execução do WA Validator deve terminar com:
-
-```text
-EXECUTAR
-   ↓
-VALIDAR
-   ↓
-CAPTURAR EVIDÊNCIAS
-   ↓
-CLASSIFICAR RESULTADOS
-   ↓
-IDENTIFICAR OBJETIVO PRINCIPAL
-   ↓
-SEPARAR ACHADOS SECUNDÁRIOS
-   ↓
-CONSOLIDAR
-   ↓
-GERAR PDF
-   ↓
-PERSISTIR ARTEFATOS
-   ↓
-REPORTAR
-```
-
-O PDF deve ser tratado como o **relatório oficial daquela execução**.
-
-A regra fundamental permanece:
-
-> **NO EVIDENCE = NO PASS**
-
-Mas agora acrescentamos:
-
-> **NO PDF = EXECUÇÃO INCOMPLETA**
-
-O objetivo é que qualquer pessoa que receba o PDF consiga entender rapidamente:
-
-**"O que o card queria validar?"**
-
-**"Foi validado?"**
-
-**"Qual evidência prova isso?"**
-
-**"O que mais foi encontrado durante a execução?"**
-
-**"Existe algum risco ou ação adicional necessária?"**
-
-Sem precisar executar novamente o teste ou interpretar todo o log técnico.
+Minha recomendação: peça ao agente de desenvolvimento para implementar primeiro essa proteção no contexto de uma execução controlada, validar a interceptação e só depois habilitar o mecanismo como padrão nas execuções do agente de WA. Isso reduz o risco de descobrir uma lacuna de cobertura quando os testes já estiverem rodando contra um site com dados reais.
