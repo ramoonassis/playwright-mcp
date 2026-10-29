@@ -1,219 +1,265 @@
-# Melhoria do Agente de Web Analytics: Interceptação e Bloqueio de Eventos durante a Validação
+# Melhoria do Agente de Web Analytics: Separação entre Validação Estrutural e Divergências de Valores
 
-## Contexto
+## 1. Contexto
 
-O agente de Web Analytics utiliza o Playwright MCP para interagir com o navegador, executar cenários de teste e validar os eventos de analytics gerados durante a navegação e as interações do usuário.
+O agente de Web Analytics utiliza documentos de referência como contexto para executar testes de eventos, identificar os eventos esperados no dataLayer e validar suas propriedades e respectivos valores.
 
-Atualmente, essas ações podem gerar requisições reais para endpoints de coleta de dados, fazendo com que os eventos produzidos durante a execução dos testes sejam contabilizados nas ferramentas de Web Analytics do site.
+Atualmente, o agente trata as propriedades e os valores descritos nesses documentos como critérios obrigatórios de aprovação. Como consequência, quando um valor encontrado durante a execução diverge do valor informado no documento de referência, o caso de teste é reprovado, mesmo quando a estrutura do evento está correta.
 
-O objetivo desta melhoria é permitir que o agente continue executando suas validações funcionais e analíticas, mas impeça que os eventos gerados exclusivamente para fins de teste sejam enviados aos serviços de coleta, evitando a contaminação das métricas reais do site.
+Foi identificado que os valores presentes nos documentos de referência são sugestões ou exemplos esperados, mas não representam necessariamente valores absolutos para todas as situações de execução.
 
-## Objetivo
+A estrutura do evento, por outro lado, continua sendo um requisito obrigatório e deve permanecer como critério de aprovação do teste.
 
-Evoluir o agente para implementar um mecanismo de interceptação de requisições de Web Analytics, utilizando os recursos disponíveis no Playwright, de modo que:
+## 2. Objetivo da melhoria
 
-1. As ações de navegação e interação sejam executadas normalmente.
-2. As requisições relacionadas ao Web Analytics sejam interceptadas antes de serem enviadas ao destino.
-3. Os payloads sejam capturados e mantidos em memória para análise.
-4. Os eventos sejam validados conforme as diretrizes existentes de Web Analytics.
-5. As requisições identificadas como eventos de analytics sejam abortadas antes de chegarem aos endpoints de coleta.
-6. O agente produza evidências suficientes para demonstrar que os eventos foram capturados, validados e bloqueados.
+Modificar o comportamento do agente para separar claramente duas dimensões de validação:
 
-## Diretrizes de implementação
+**A. Validação estrutural:** obrigatória e determinante para o resultado do caso de teste.
 
-### 1. Analisar a arquitetura existente antes de realizar alterações
+**B. Comparação de valores:** informativa, destinada a identificar e registrar divergências entre os valores descritos no contexto e os encontrados durante a execução, sem reprovar o caso de teste exclusivamente por essas diferenças.
 
-Antes de modificar qualquer arquivo, inspecione a implementação atual do agente, suas instruções, os fluxos de execução, as ferramentas disponíveis no Playwright MCP e as diretrizes de validação de Web Analytics.
+O agente deve continuar identificando problemas reais de estrutura, propriedades ausentes, tipos incorretos e variáveis que deveriam ser dinâmicas, mas que foram implementadas como strings literais.
 
-Identifique:
+A melhoria não deve eliminar validações existentes de estrutura nem flexibilizar requisitos que sejam explicitamente definidos como obrigatórios.
 
-- Como o agente inicia e controla o navegador.
-- Em qual etapa as interceptações de rede podem ser configuradas.
-- Quais endpoints, domínios, padrões de URL e tipos de requisição são utilizados para coleta de analytics.
-- Como os payloads são atualmente identificados, extraídos e validados.
-- Como os resultados e as evidências são apresentados ao usuário.
-- Se existem mecanismos de interceptação, mocks ou configurações de rede que possam ser reutilizados.
+## 3. Nova regra de avaliação
 
-Preserve a arquitetura atual e reutilize as implementações existentes sempre que possível. Não substitua ferramentas, fluxos ou diretrizes sem necessidade.
+Implemente a seguinte lógica de decisão:
 
-### 2. Interceptar requisições de Web Analytics
+### 3.1. Quando o caso de teste deve ser aprovado
 
-Configure a interceptação de rede antes de iniciar as ações que possam gerar eventos analíticos.
+O caso de teste deve ser considerado `PASSED` quando:
 
-Utilize os mecanismos de roteamento e interceptação compatíveis com a versão e a arquitetura existentes do Playwright.
+- O evento esperado for encontrado no contexto correto da execução.
+- A estrutura obrigatória do evento estiver presente.
+- Todas as propriedades obrigatórias estiverem presentes.
+- A estrutura de objetos e arrays estiver de acordo com o esperado, quando aplicável.
+- Os tipos de dados e os formatos estruturais obrigatórios forem respeitados.
+- As variáveis e os valores dinâmicos estiverem representados corretamente.
+- Não houver violações de requisitos estruturais obrigatórios.
 
-A interceptação deve identificar as requisições de coleta de Web Analytics com base em critérios verificáveis, como endpoints conhecidos, domínios de coleta, padrões de URL, métodos HTTP e características dos payloads.
+Se essas condições forem atendidas, divergências entre os valores encontrados e os valores exemplificados no documento de referência não devem reprovar o caso de teste.
 
-Considere os diferentes mecanismos de envio utilizados pelo site, quando aplicáveis, incluindo:
+### 3.2. Quando o caso de teste deve continuar reprovado
 
-- Requisições HTTP GET e POST.
-- Eventos enviados por `fetch` e `XMLHttpRequest`.
-- Requisições disparadas por bibliotecas e tags de analytics.
-- Payloads enviados por mecanismos como `sendBeacon`.
-- Eventos de navegação, page view, interação, comércio eletrônico e outras categorias contempladas pelas diretrizes existentes.
+O caso de teste deve ser considerado `FAILED` quando houver uma violação estrutural ou de um requisito explicitamente obrigatório, incluindo, mas não se limitando a:
 
-A cobertura de cada mecanismo deve ser confirmada tecnicamente. Não presuma que todos os tipos de requisição serão interceptados apenas porque uma rota HTTP foi configurada.
+- Evento esperado não encontrado, conforme as regras existentes de identificação e espera.
+- Propriedade obrigatória ausente.
+- Estrutura JSON incompatível com a estrutura esperada.
+- Objeto ou array ausente, incorretamente representado ou com estrutura incompatível.
+- Tipo de dado incorreto quando o tipo fizer parte do contrato do evento.
+- Variável dinâmica esperada representada incorretamente como uma string literal.
+- Placeholder ou expressão dinâmica que deveria ser resolvida, mas foi enviada literalmente.
+- Violação de outra regra estrutural obrigatória já existente nas diretrizes do agente.
 
-### 3. Capturar os payloads em memória
+Não transforme toda divergência em uma questão estrutural. A classificação deve considerar a natureza real do problema.
 
-Quando uma requisição de Web Analytics for identificada:
+Por exemplo, se uma propriedade deveria conter um valor dinâmico e o evento apresentar corretamente um identificador real, esse valor pode ser válido mesmo que seja diferente do exemplo do documento. Entretanto, se o evento enviar literalmente o placeholder que deveria ter sido substituído, isso deve continuar sendo uma falha.
 
-1. Capture as informações disponíveis da requisição antes de abortá-la.
-2. Extraia o payload conforme o formato utilizado, que pode incluir query parameters, JSON, formulários ou outros formatos suportados.
-3. Preserve os dados necessários para executar as validações existentes.
-4. Disponibilize o payload para o mecanismo de análise do agente sem depender de uma resposta real do serviço de analytics.
-5. Registre informações de diagnóstico, como endpoint, método, tipo de evento, horário relativo da captura e resultado da validação.
+## 4. Tratamento das divergências de valores
 
-A captura deve ocorrer antes do bloqueio da requisição.
+Quando o agente encontrar uma propriedade cuja estrutura esteja correta, mas cujo valor seja diferente daquele informado no documento de referência, deverá registrar uma divergência informativa.
 
-Os payloads devem permanecer em memória durante a execução, sem serem enviados a serviços externos para análise. Evite persistir dados desnecessários ou potencialmente sensíveis.
+Para cada divergência identificada, registrar sempre que possível:
 
-### 4. Bloquear o envio dos eventos
+- Nome do evento.
+- Nome ou caminho completo da propriedade.
+- Valor de referência informado no contexto.
+- Valor efetivamente encontrado durante a execução.
+- Resultado da validação estrutural daquela propriedade.
+- Observação indicando que a divergência é informativa e não representa, isoladamente, uma falha do caso de teste.
 
-Após identificar e capturar uma requisição de Web Analytics, interrompa seu envio antes que ela alcance o endpoint de coleta.
+Exemplo de contexto informado:
 
-O bloqueio deve ocorrer por meio de abortamento da requisição ou mecanismo equivalente, conforme suportado pelo Playwright e pelo tipo de tráfego identificado.
+`event: view_item`
 
-**É obrigatório que a validação do payload não dependa do envio efetivo do evento ao serviço de analytics.**
+`ecommerce.currency: BRL`
 
-O agente deve conseguir avaliar o conteúdo capturado mesmo quando a requisição não recebe uma resposta HTTP do servidor.
+`ecommerce.items[0].item_category: Eletrodomésticos`
 
-Não substitua o bloqueio por uma estratégia que permita o envio real do evento e tente removê-lo posteriormente. A prevenção do envio é o requisito central desta melhoria.
+Exemplo de evento encontrado durante a execução:
 
-### 5. Preservar o comportamento do site durante os testes
+`event: view_item`
 
-O bloqueio deve ser restrito às requisições de coleta de Web Analytics identificadas de forma confiável.
+`ecommerce.currency: BRL`
 
-Não bloqueie indiscriminadamente todas as requisições de rede, APIs de negócio, chamadas de catálogo, carrinho, checkout, autenticação, CMS ou outros serviços necessários para o funcionamento do site.
+`ecommerce.items[0].item_category: Lavadoras`
 
-Quando houver ambiguidade sobre a finalidade de uma requisição, não a classifique automaticamente como analytics apenas por conter palavras genéricas relacionadas a eventos ou rastreamento.
+Nesse cenário, considerando que `ecommerce.items[0].item_category` seja uma propriedade estruturalmente válida e que seu valor não esteja definido como uma restrição obrigatória, o agente deverá:
 
-Implemente regras de identificação explícitas, revisáveis e compatíveis com os sites e as ferramentas já contemplados pelo agente.
+- Aprovar a validação estrutural do evento.
+- Registrar a divergência entre `Eletrodomésticos` e `Lavadoras`.
+- Apresentar a divergência na seção de avisos do relatório.
+- Manter o resultado do caso de teste como `PASSED`.
 
-Caso seja necessário adicionar ou atualizar uma lista de endpoints, mantenha essa configuração centralizada e documentada.
+A diferença de valores não deve alterar o resultado final do teste quando a estrutura e os requisitos obrigatórios estiverem corretos.
 
-### 6. Executar as validações existentes
+## 5. Tratamento dos valores dinâmicos e placeholders
 
-Após capturar os payloads, execute as diretrizes de validação de Web Analytics já implementadas no agente.
+O agente deve diferenciar valores variáveis legítimos de erros na representação de valores dinâmicos.
 
-Preserve os critérios existentes para avaliar, conforme aplicável:
+Considere os seguintes exemplos:
 
-- Presença e obrigatoriedade de parâmetros.
-- Nome e tipo dos eventos.
-- Estrutura e integridade dos payloads.
-- Valores esperados e consistência dos campos.
-- Contexto da página e da interação que originou o evento.
-- Regras de negócio e requisitos específicos do cenário.
-- Eventos ausentes, duplicados ou inesperados.
-- Correspondência entre a ação realizada no navegador e o evento observado.
+**Exemplo A: divergência informativa**
 
-Não altere as regras de negócio, os critérios de aprovação ou os requisitos de WA apenas para adaptar a interceptação.
+Contexto:
 
-O objetivo é mudar o mecanismo de captura e envio, mantendo a lógica de validação existente.
+`transaction_id: "12345"`
 
-### 7. Diferenciar validação analítica de envio real
+Valor encontrado:
 
-Atualize o relatório de execução para deixar claro que os eventos foram validados em memória e tiveram o envio bloqueado.
+`transaction_id: "98765"`
 
-Diferencie os seguintes resultados:
+Se o identificador for dinâmico e ambos os valores respeitarem o formato e os requisitos definidos, registrar a diferença como aviso, sem reprovar o teste.
 
-- **Validado:** o payload capturado atende aos critérios de Web Analytics.
-- **Falha de validação:** o payload capturado não atende aos critérios esperados.
-- **Evento esperado não observado:** o cenário foi executado, mas o evento esperado não foi capturado dentro das condições de espera definidas.
-- **Envio bloqueado:** a requisição de analytics foi interceptada e seu envio foi impedido.
-- **Proteção não confirmada:** não foi possível comprovar que o mecanismo de bloqueio estava ativo ou que cobria o endpoint identificado.
+**Exemplo B: falha estrutural ou de representação**
 
-Não considere um cenário protegido contra contaminação de dados apenas porque o teste terminou com sucesso. A proteção precisa ser verificada de forma independente.
+Contexto:
 
-Se o mecanismo de interceptação falhar, não afirmar que os eventos foram bloqueados. Sinalize a falha e evite continuar a execução de cenários que possam enviar eventos reais sem a proteção necessária.
+`transaction_id: "{transactionId}"`
 
-## Estratégia de testes da implementação
+Valor encontrado:
 
-Crie ou adapte testes para comprovar os seguintes comportamentos:
+`transaction_id: "{transactionId}"`
 
-1. Um evento válido é capturado, validado e bloqueado.
-2. Um evento inválido é capturado, reprovado na validação e bloqueado da mesma forma.
-3. A ausência de um evento esperado é identificada corretamente.
-4. Requisições comuns necessárias para o funcionamento do site continuam sendo realizadas.
-5. Diferentes formatos de payload são processados corretamente quando suportados pela implementação.
-6. O agente consegue validar os dados sem receber uma resposta real do endpoint de analytics.
-7. A interceptação está ativa antes da primeira ação capaz de gerar eventos.
-8. Requisições de analytics originadas por navegação, interação e mecanismos de envio suportados são tratadas conforme as regras implementadas.
-9. Uma falha de configuração ou de interceptação não é apresentada como bloqueio bem-sucedido.
-10. O relatório diferencia eventos capturados, eventos validados e requisições efetivamente bloqueadas.
+Se as diretrizes indicarem que `{transactionId}` representa uma variável que deveria ter sido substituída por um valor real, sua presença literal no payload deverá ser classificada como falha.
 
-Sempre que possível, utilize endpoints simulados ou ambientes controlados para verificar que as requisições bloqueadas não chegam ao destino. Não utilize endpoints de produção para testar se o bloqueio funciona.
+**Exemplo C: propriedade ausente**
 
-## Critérios de aceite
+Contexto:
 
-A melhoria será considerada concluída quando:
+`item_id: "12345"`
 
-- A interceptação estiver configurada antes da execução dos cenários.
-- Os eventos de analytics forem capturados e disponibilizados para validação em memória.
-- O envio dos eventos identificados for impedido antes da chegada aos serviços de coleta.
-- As validações existentes de WA continuarem funcionando.
-- As APIs e funcionalidades de negócio necessárias aos testes permanecerem operacionais.
-- A execução apresentar evidências de captura, validação e bloqueio.
-- Falhas na proteção forem identificadas e reportadas explicitamente.
-- Os testes de regressão demonstrarem que a nova implementação não compromete o comportamento anterior do agente.
-- A documentação do agente for atualizada para refletir o novo fluxo.
+Valor encontrado: a propriedade `item_id` não existe no evento.
 
-## Restrições
+Se `item_id` fizer parte da estrutura obrigatória, o teste deverá ser reprovado.
 
-- Não reescreva o agente do zero.
-- Não remova nem simplifique as diretrizes existentes de Web Analytics.
-- Não altere os critérios de validação para fazer os cenários passarem.
-- Não permita que eventos de teste sejam enviados aos serviços reais de coleta.
-- Não bloqueie APIs de negócio por engano.
-- Não considere a interceptação comprovada sem evidências técnicas.
-- Não aplique alterações diretamente sem antes analisar a implementação e identificar os arquivos envolvidos.
+**Exemplo D: valor diferente em propriedade obrigatória**
 
-## Entrega esperada
+Contexto:
 
-Implemente a melhoria na estrutura existente do agente e apresente:
+`currency: "BRL"`
+
+Valor encontrado:
+
+`currency: "USD"`
+
+Se o documento ou as regras de negócio definirem explicitamente que a moeda deve ser `BRL` naquele cenário, a divergência deverá continuar sendo uma falha. Caso `BRL` seja apenas um valor de exemplo e não exista uma restrição obrigatória, a diferença deverá ser registrada como aviso.
+
+A classificação deve ser orientada pelas regras de validação e pelo significado do campo, e não apenas pela comparação literal entre strings.
+
+## 6. Hierarquia das fontes de validação
+
+Atualize a lógica de interpretação dos documentos de contexto para seguir esta hierarquia:
+
+1. Requisitos explicitamente definidos como obrigatórios nas diretrizes de teste ou nas regras de negócio aplicáveis.
+2. Estrutura esperada do evento, incluindo propriedades obrigatórias, tipos, formatos e requisitos de representação dinâmica.
+3. Valores de referência apresentados no documento de contexto, tratados como sugestões ou exemplos quando não houver uma restrição explícita.
+
+O agente não deve presumir que todo valor presente no documento de contexto é obrigatório.
+
+Da mesma forma, não deve presumir que todo valor é opcional. Quando houver uma regra de negócio explícita ou um requisito de valor obrigatório, esse requisito deverá ser respeitado.
+
+Se não for possível determinar se um valor é obrigatório ou apenas exemplificativo, registre a ambiguidade para análise, em vez de inventar uma regra ou reprovar automaticamente o caso apenas pela diferença de valor.
+
+## 7. Atualização do relatório PDF
+
+Atualize o PDF gerado pelo agente para incluir uma seção específica denominada **"Avisos e Divergências de Valores"**.
+
+Essa seção deve apresentar as diferenças entre os valores de referência e os valores encontrados durante a execução que não constituam falhas estruturais ou violações de requisitos obrigatórios.
+
+Para cada divergência, apresentar:
+
+- Evento.
+- Propriedade.
+- Valor de referência.
+- Valor encontrado.
+- Classificação: `AVISO`.
+- Justificativa resumida.
+
+Exemplo de apresentação:
+
+| Evento | Propriedade | Valor de referência | Valor encontrado | Classificação |
+|---|---|---|---|---|
+| view_item | ecommerce.currency | BRL | USD | AVISO |
+| view_item | ecommerce.items[0].item_category | Eletrodomésticos | Lavadoras | AVISO |
+
+Os valores acima são ilustrativos. A divergência de moeda somente deve ser apresentada como aviso se não houver um requisito explícito determinando a moeda esperada para aquele cenário.
+
+### Regras para o relatório
+
+- Os avisos não devem ser contabilizados como testes reprovados.
+- O status do caso de teste deve permanecer `PASSED` quando as condições estruturais e os requisitos obrigatórios forem atendidos.
+- As falhas estruturais devem continuar na seção de falhas, com seus respectivos motivos e evidências.
+- O resumo executivo deve distinguir a quantidade de casos aprovados, reprovados e avisos de divergência.
+- Quando não houver divergências, apresentar uma mensagem indicando que nenhum aviso de divergência de valores foi identificado.
+- A seção de avisos não deve substituir nem ocultar evidências de falhas reais.
+
+## 8. Compatibilidade com a arquitetura atual
+
+Antes de implementar a mudança:
+
+1. Analise as instruções atuais do agente.
+2. Identifique como os documentos de referência são interpretados.
+3. Localize a lógica responsável pela comparação de propriedades e valores.
+4. Identifique onde o resultado `PASSED` ou `FAILED` é definido.
+5. Localize a estrutura de dados utilizada para montar o relatório PDF.
+6. Verifique se a classificação das falhas está centralizada ou distribuída entre diferentes etapas do agente.
+
+Implemente a alteração na arquitetura existente, reutilizando os mecanismos de validação e geração de relatórios sempre que possível.
+
+Não reescreva o agente do zero e não remova regras que não estejam diretamente relacionadas a essa melhoria.
+
+Sempre que possível, mantenha separadas as responsabilidades de:
+
+- Validação estrutural.
+- Validação de requisitos explicitamente obrigatórios.
+- Registro de divergências informativas.
+- Consolidação do resultado do caso de teste.
+- Geração do relatório.
+
+## 9. Testes de regressão obrigatórios
+
+Crie ou adapte testes para demonstrar os seguintes comportamentos:
+
+1. Evento com estrutura correta e todos os valores iguais aos do contexto: `PASSED`, sem avisos.
+2. Evento com estrutura correta e um valor diferente do contexto, sem restrição obrigatória: `PASSED`, com aviso.
+3. Evento com estrutura correta e múltiplos valores diferentes do contexto, sem restrições obrigatórias: `PASSED`, com todos os avisos registrados.
+4. Evento com propriedade obrigatória ausente: `FAILED`.
+5. Evento com tipo de dado incorreto em uma propriedade cujo tipo seja obrigatório: `FAILED`.
+6. Evento com variável dinâmica enviada literalmente: `FAILED`.
+7. Evento com valor diferente que viola uma regra de negócio explicitamente obrigatória: `FAILED`.
+8. Evento esperado não encontrado: manter o comportamento de reprovação existente.
+9. Evento com divergência informativa e uma falha estrutural simultaneamente: `FAILED`, com a falha estrutural registrada e a divergência informativa preservada quando relevante.
+10. PDF contendo casos aprovados, reprovados e avisos: apresentar corretamente os status e as respectivas contagens.
+
+## 10. Critérios de aceite
+
+A melhoria estará concluída quando:
+
+- O documento de contexto deixar de ser tratado como fonte absoluta para todos os valores.
+- A estrutura obrigatória do evento continuar sendo validada rigorosamente.
+- Divergências de valores não obrigatórios forem registradas como avisos.
+- Os avisos não provocarem reprovação do caso de teste.
+- Requisitos de negócio explicitamente obrigatórios continuarem sendo respeitados.
+- Propriedades ausentes, tipos incorretos e placeholders literais continuarem sendo tratados como falhas quando aplicável.
+- O PDF apresentar a nova seção de avisos e suas evidências.
+- As contagens e os resultados finais permanecerem consistentes com os status dos casos de teste.
+- Os testes de regressão demonstrarem que as regras anteriores de validação estrutural continuam funcionando.
+
+## 11. Entrega esperada
+
+Ao concluir a implementação, apresente:
 
 1. Resumo das alterações realizadas.
-2. Arquivos modificados e justificativa de cada alteração.
-3. Estratégia utilizada para identificar e interceptar os eventos.
-4. Como os payloads são capturados, armazenados em memória e validados.
-5. Como o bloqueio do envio é garantido e quais limitações técnicas permanecem.
-6. Evidências e resultados dos testes executados.
-7. Riscos residuais e pontos que exigem validação adicional.
+2. Arquivos modificados e responsabilidades de cada um.
+3. Explicação da nova lógica de classificação.
+4. Exemplos de divergências tratadas como avisos e de violações que continuam gerando falhas.
+5. Evidências dos testes executados.
+6. Exemplo ou evidência do PDF atualizado.
+7. Limitações ou ambiguidades identificadas durante a implementação.
 
-Antes de concluir, verifique se a solução realmente impede o envio das requisições de analytics nos mecanismos suportados, sem comprometer as funcionalidades do site. Se alguma limitação do Playwright MCP ou da arquitetura atual impedir uma garantia completa, documente-a explicitamente e não declare o requisito como atendido sem comprovação.
+Não declare a melhoria concluída apenas com base na atualização das instruções do agente. Verifique se a lógica efetiva de avaliação e a geração do PDF respeitam o novo comportamento.
 
-
-Um detalhe técnico importante
-Tem um ponto que eu faria questão de validar na implementação: interceptar uma rota no Playwright não garante, por si só, que todos os mecanismos de envio de analytics estarão cobertos.
-
-Por exemplo, dependendo de como o site implementa o tracking, fetch e XMLHttpRequest podem ser tratados de uma maneira, enquanto navigator.sendBeacon, requisições iniciadas por service workers ou tráfego fora do contexto de rede interceptado podem exigir verificações adicionais.
-
-Por isso, o prompt pede que o agente investigue a cobertura real do mecanismo antes de afirmar que está protegido.
-
-Também recomendo manter a seguinte sequência operacional:
-1. Ativar a interceptação
-
-Antes de navegar ou interagir com o site
-
-
-2. Executar o cenário no navegador
-
-Manter as ações reais do teste via Playwright MCP
-
-
-3. Capturar o payload em memória
-
-Extrair os campos necessários antes de abortar a requisição
-
-
-4. Abortar o envio e validar
-
-Impedir a coleta real e aplicar as diretrizes existentes de WA
-
-
-5. Gerar evidências
-
-Resultado da validação, requisições bloqueadas e eventuais limitações
-
-
-Minha recomendação: peça ao agente de desenvolvimento para implementar primeiro essa proteção no contexto de uma execução controlada, validar a interceptação e só depois habilitar o mecanismo como padrão nas execuções do agente de WA. Isso reduz o risco de descobrir uma lacuna de cobertura quando os testes já estiverem rodando contra um site com dados reais.
+**Regra fundamental:** a estrutura e os requisitos explicitamente obrigatórios determinam a aprovação do caso de teste. Valores de referência que sejam apenas exemplificativos servem para identificar divergências e gerar avisos, mas não devem reprovar o teste.
