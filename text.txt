@@ -1,265 +1,382 @@
-# Melhoria do Agente de Web Analytics: Separação entre Validação Estrutural e Divergências de Valores
+# MISSÃO: ANÁLISE TÉCNICA E DOCUMENTAÇÃO COMPLETA DE INSTALAÇÃO E EXECUÇÃO DO WA TEST AGENT
 
-## 1. Contexto
+## 1. Contexto e objetivo
 
-O agente de Web Analytics utiliza documentos de referência como contexto para executar testes de eventos, identificar os eventos esperados no dataLayer e validar suas propriedades e respectivos valores.
+Você está trabalhando dentro do repositório GitHub de um projeto de QA que contém um agente de inteligência artificial responsável pela execução de testes de Web Analytics (WA).
 
-Atualmente, o agente trata as propriedades e os valores descritos nesses documentos como critérios obrigatórios de aprovação. Como consequência, quando um valor encontrado durante a execução diverge do valor informado no documento de referência, o caso de teste é reprovado, mesmo quando a estrutura do evento está correta.
+Esse agente é utilizado pelo time de QA para executar casos de teste relacionados à validação de eventos de Web Analytics em aplicações web.
 
-Foi identificado que os valores presentes nos documentos de referência são sugestões ou exemplos esperados, mas não representam necessariamente valores absolutos para todas as situações de execução.
+Seu funcionamento envolve, entre outras atividades:
 
-A estrutura do evento, por outro lado, continua sendo um requisito obrigatório e deve permanecer como critério de aprovação do teste.
+- Receber um relatório ou documento contendo as instruções de execução.
+- Interpretar os casos de teste, cenários, eventos e respectivas propriedades e valores esperados.
+- Identificar os ambientes que devem ser utilizados.
+- Utilizar contas e credenciais de teste.
+- Navegar pela aplicação e executar as ações descritas nos casos de teste.
+- Identificar e validar os eventos de Web Analytics.
+- Avaliar se os eventos e suas estruturas estão de acordo com os critérios esperados.
+- Consolidar os resultados das validações.
+- Gerar um PDF executivo contendo o resultado da execução e as respectivas evidências.
 
-## 2. Objetivo da melhoria
+Atualmente, o agente está integrado ao projeto de automação Playwright e é acionado por meio do Gemini CLI.
 
-Modificar o comportamento do agente para separar claramente duas dimensões de validação:
+O objetivo desta atividade é permitir que profissionais do time de WA, que não possuem familiaridade com ferramentas de desenvolvimento, consigam instalar, configurar e utilizar o agente em suas próprias máquinas corporativas.
 
-**A. Validação estrutural:** obrigatória e determinante para o resultado do caso de teste.
+Esses profissionais não necessariamente conhecem ferramentas como VS Code, Node.js, npm, Git, Playwright, MCP ou Gemini CLI.
 
-**B. Comparação de valores:** informativa, destinada a identificar e registrar divergências entre os valores descritos no contexto e os encontrados durante a execução, sem reprovar o caso de teste exclusivamente por essas diferenças.
+Portanto, precisamos produzir uma documentação extremamente didática, detalhada e confiável, que explique todo o processo necessário para que uma pessoa consiga sair de uma máquina sem o ambiente configurado até conseguir executar o WA Test Agent com sucesso.
 
-O agente deve continuar identificando problemas reais de estrutura, propriedades ausentes, tipos incorretos e variáveis que deveriam ser dinâmicas, mas que foram implementadas como strings literais.
+**IMPORTANTE: não assuma que as dependências são apenas Node.js, Playwright e Gemini CLI. Investigue o repositório e identifique todas as dependências reais e necessárias para o funcionamento do agente.**
 
-A melhoria não deve eliminar validações existentes de estrutura nem flexibilizar requisitos que sejam explicitamente definidos como obrigatórios.
+---
 
-## 3. Nova regra de avaliação
+## 2. Primeira etapa: investigação completa do repositório
 
-Implemente a seguinte lógica de decisão:
+Antes de escrever qualquer documentação, faça uma análise técnica do repositório.
 
-### 3.1. Quando o caso de teste deve ser aprovado
+Investigue especialmente:
 
-O caso de teste deve ser considerado `PASSED` quando:
+1. Estrutura de diretórios e arquivos.
+2. README e demais documentos existentes.
+3. package.json e package-lock.json.
+4. Versões de Node.js e npm exigidas ou recomendadas.
+5. Dependências declaradas no projeto.
+6. Dependências adicionais utilizadas pelo agente.
+7. Arquivos de configuração do Playwright.
+8. Configurações de MCP.
+9. Arquivos de configuração do Gemini CLI.
+10. Arquivos GEMINI.md, AGENTS.md ou equivalentes, caso existam.
+11. Prompts, instruções e arquivos de contexto utilizados pelo agente.
+12. Scripts de inicialização e execução.
+13. Variáveis de ambiente e arquivos .env.
+14. Integrações externas utilizadas durante a execução.
+15. Configurações de navegador e dependências do Playwright.
+16. Contas, autenticações e mecanismos de acesso aos ambientes.
+17. Bibliotecas, ferramentas ou serviços auxiliares necessários.
+18. Mecanismos utilizados para gerar o PDF executivo.
+19. Caminhos de entrada e saída dos arquivos.
+20. Qualquer configuração específica necessária para que o agente consiga executar suas atividades.
 
-- O evento esperado for encontrado no contexto correto da execução.
-- A estrutura obrigatória do evento estiver presente.
-- Todas as propriedades obrigatórias estiverem presentes.
-- A estrutura de objetos e arrays estiver de acordo com o esperado, quando aplicável.
-- Os tipos de dados e os formatos estruturais obrigatórios forem respeitados.
-- As variáveis e os valores dinâmicos estiverem representados corretamente.
-- Não houver violações de requisitos estruturais obrigatórios.
+Não se limite aos arquivos mais evidentes. Faça uma análise das referências entre scripts, configurações e dependências para identificar requisitos indiretos.
 
-Se essas condições forem atendidas, divergências entre os valores encontrados e os valores exemplificados no documento de referência não devem reprovar o caso de teste.
+Sempre que identificar uma dependência, explique:
 
-### 3.2. Quando o caso de teste deve continuar reprovado
+- Qual é a dependência.
+- Qual é sua finalidade.
+- Por que o agente precisa dela.
+- Se precisa ser instalada manualmente.
+- Se é instalada automaticamente por outro processo.
+- Qual versão deve ser utilizada, quando aplicável.
+- Como verificar se está corretamente instalada.
 
-O caso de teste deve ser considerado `FAILED` quando houver uma violação estrutural ou de um requisito explicitamente obrigatório, incluindo, mas não se limitando a:
+Não exponha valores de credenciais, tokens, senhas ou outros segredos encontrados durante a análise. Apenas identifique a existência dessas configurações e explique como devem ser fornecidas de maneira segura.
 
-- Evento esperado não encontrado, conforme as regras existentes de identificação e espera.
-- Propriedade obrigatória ausente.
-- Estrutura JSON incompatível com a estrutura esperada.
-- Objeto ou array ausente, incorretamente representado ou com estrutura incompatível.
-- Tipo de dado incorreto quando o tipo fizer parte do contrato do evento.
-- Variável dinâmica esperada representada incorretamente como uma string literal.
-- Placeholder ou expressão dinâmica que deveria ser resolvida, mas foi enviada literalmente.
-- Violação de outra regra estrutural obrigatória já existente nas diretrizes do agente.
+---
 
-Não transforme toda divergência em uma questão estrutural. A classificação deve considerar a natureza real do problema.
+## 3. Segunda etapa: mapear o processo completo de instalação
 
-Por exemplo, se uma propriedade deveria conter um valor dinâmico e o evento apresentar corretamente um identificador real, esse valor pode ser válido mesmo que seja diferente do exemplo do documento. Entretanto, se o evento enviar literalmente o placeholder que deveria ter sido substituído, isso deve continuar sendo uma falha.
+Com base exclusivamente na arquitetura encontrada no repositório, construa um passo a passo de instalação, respeitando a ordem correta das dependências.
 
-## 4. Tratamento das divergências de valores
+Considere como cenário principal uma máquina corporativa Windows, utilizada por uma pessoa que não trabalha diariamente com desenvolvimento de software.
 
-Quando o agente encontrar uma propriedade cuja estrutura esteja correta, mas cujo valor seja diferente daquele informado no documento de referência, deverá registrar uma divergência informativa.
+O processo deve começar do zero, considerando que a máquina pode não possuir nenhuma das ferramentas necessárias.
 
-Para cada divergência identificada, registrar sempre que possível:
+Investigue e documente as seguintes etapas:
 
-- Nome do evento.
-- Nome ou caminho completo da propriedade.
-- Valor de referência informado no contexto.
-- Valor efetivamente encontrado durante a execução.
-- Resultado da validação estrutural daquela propriedade.
-- Observação indicando que a divergência é informativa e não representa, isoladamente, uma falha do caso de teste.
+### Etapa 1: pré-requisitos e preparação da máquina
 
-Exemplo de contexto informado:
+Explique:
 
-`event: view_item`
+- Qual sistema operacional é necessário.
+- Quais requisitos mínimos devem ser atendidos.
+- Se é necessário possuir permissões de administrador.
+- Se existem restrições comuns de máquinas corporativas que podem impedir a instalação.
+- Quais atividades provavelmente precisarão de suporte do time de TI.
 
-`ecommerce.currency: BRL`
+Crie uma lista de verificação inicial.
 
-`ecommerce.items[0].item_category: Eletrodomésticos`
+### Etapa 2: acesso ao GitHub e download do repositório
 
-Exemplo de evento encontrado durante a execução:
+Explique:
 
-`event: view_item`
+- Se o usuário precisa possuir uma conta GitHub.
+- Se precisa receber autorização de acesso ao repositório.
+- Como acessar o repositório.
+- Como baixar ou clonar o projeto.
+- Diferença entre baixar o ZIP e utilizar Git para clonar o repositório.
+- Qual alternativa é mais recomendada para o cenário.
+- Como identificar se o download foi realizado corretamente.
+- Em qual pasta o projeto deve ficar.
 
-`ecommerce.currency: BRL`
+Inclua os comandos necessários, explicando o que cada comando faz.
 
-`ecommerce.items[0].item_category: Lavadoras`
+### Etapa 3: instalação do Node.js e npm
 
-Nesse cenário, considerando que `ecommerce.items[0].item_category` seja uma propriedade estruturalmente válida e que seu valor não esteja definido como uma restrição obrigatória, o agente deverá:
+Explique:
 
-- Aprovar a validação estrutural do evento.
-- Registrar a divergência entre `Eletrodomésticos` e `Lavadoras`.
-- Apresentar a divergência na seção de avisos do relatório.
-- Manter o resultado do caso de teste como `PASSED`.
+- Por que Node.js é necessário.
+- Qual versão é compatível com o projeto.
+- Onde obter o instalador oficial.
+- Como instalar no Windows.
+- Se o npm já vem incluído.
+- Como verificar a instalação.
+- Quais erros podem ocorrer.
+- Quando será necessário acionar a TI.
 
-A diferença de valores não deve alterar o resultado final do teste quando a estrutura e os requisitos obrigatórios estiverem corretos.
+Inclua os comandos de verificação.
 
-## 5. Tratamento dos valores dinâmicos e placeholders
+### Etapa 4: instalação das dependências do projeto
 
-O agente deve diferenciar valores variáveis legítimos de erros na representação de valores dinâmicos.
+Investigue o package.json e o package-lock.json.
 
-Considere os seguintes exemplos:
+Explique:
 
-**Exemplo A: divergência informativa**
+- O que são dependências de um projeto.
+- O que é npm.
+- O que significa executar npm install ou npm ci.
+- Qual comando deve ser utilizado neste projeto.
+- Em qual diretório o comando deve ser executado.
+- Como saber se a instalação terminou corretamente.
+- Quais erros podem ocorrer em uma rede corporativa.
 
-Contexto:
+Não recomende comandos genéricos sem verificar sua compatibilidade com o projeto.
 
-`transaction_id: "12345"`
+### Etapa 5: instalação e configuração do Playwright
 
-Valor encontrado:
+Explique:
 
-`transaction_id: "98765"`
+- Qual é o papel do Playwright nesse agente.
+- Se ele já está declarado nas dependências do projeto.
+- Se precisa de instalação adicional.
+- Como instalar os navegadores necessários.
+- Quais navegadores são utilizados pelo agente.
+- Se existem dependências adicionais do sistema operacional.
+- Como verificar se o Playwright está funcionando.
 
-Se o identificador for dinâmico e ambos os valores respeitarem o formato e os requisitos definidos, registrar a diferença como aviso, sem reprovar o teste.
+Inclua os comandos exatos e explique o resultado esperado.
 
-**Exemplo B: falha estrutural ou de representação**
+### Etapa 6: instalação e autenticação do Gemini CLI
 
-Contexto:
+Essa etapa merece atenção especial.
 
-`transaction_id: "{transactionId}"`
+Explique:
 
-Valor encontrado:
+- O que é o Gemini CLI.
+- Qual é sua função dentro do WA Test Agent.
+- Como instalar ou executar o Gemini CLI.
+- Qual versão deve ser utilizada.
+- Se o projeto utiliza instalação global, npx ou outro mecanismo.
+- Como realizar a autenticação.
+- Se é necessária uma conta Google.
+- Quais permissões ou acessos precisam ser concedidos.
+- Se existe necessidade de assinatura, licença ou habilitação específica.
+- Como verificar se o Gemini CLI está funcionando.
+- Como identificar problemas de autenticação.
+- Quais restrições corporativas podem impedir sua utilização.
 
-`transaction_id: "{transactionId}"`
+Investigue também como o agente é efetivamente acionado pelo Gemini CLI.
 
-Se as diretrizes indicarem que `{transactionId}` representa uma variável que deveria ter sido substituída por um valor real, sua presença literal no payload deverá ser classificada como falha.
+Não invente comandos. Identifique o mecanismo real utilizado pelo projeto.
 
-**Exemplo C: propriedade ausente**
+### Etapa 7: configuração do MCP e demais integrações
 
-Contexto:
+Investigue todas as configurações MCP necessárias.
 
-`item_id: "12345"`
+Explique:
 
-Valor encontrado: a propriedade `item_id` não existe no evento.
+- O que é MCP de maneira simples.
+- Qual é sua função na execução do agente.
+- Quais servidores MCP são utilizados.
+- Como esses servidores são inicializados.
+- Quais dependências possuem.
+- Se precisam de configurações adicionais.
+- Se exigem autenticação.
+- Se dependem de variáveis de ambiente.
+- Como verificar se estão disponíveis para o Gemini CLI.
 
-Se `item_id` fizer parte da estrutura obrigatória, o teste deverá ser reprovado.
+Investigue também outras integrações externas necessárias para a execução.
 
-**Exemplo D: valor diferente em propriedade obrigatória**
+### Etapa 8: configuração de credenciais e ambientes de teste
 
-Contexto:
+Explique como o usuário deve configurar as informações necessárias para acessar os ambientes.
 
-`currency: "BRL"`
+Identifique:
 
-Valor encontrado:
+- Variáveis de ambiente.
+- Arquivos .env necessários.
+- Contas de teste.
+- Perfis de usuário.
+- URLs dos ambientes.
+- Tokens ou mecanismos de autenticação.
+- Dependências externas utilizadas para receber códigos de login, caso existam.
 
-`currency: "USD"`
+Diferencie claramente informações que devem ser fornecidas pelo time de WA, pelo time de QA e pelo time de TI.
 
-Se o documento ou as regras de negócio definirem explicitamente que a moeda deve ser `BRL` naquele cenário, a divergência deverá continuar sendo uma falha. Caso `BRL` seja apenas um valor de exemplo e não exista uma restrição obrigatória, a diferença deverá ser registrada como aviso.
+Nunca inclua credenciais reais no documento.
 
-A classificação deve ser orientada pelas regras de validação e pelo significado do campo, e não apenas pela comparação literal entre strings.
+### Etapa 9: primeira execução do agente
 
-## 6. Hierarquia das fontes de validação
+Esta é uma das etapas mais importantes.
 
-Atualize a lógica de interpretação dos documentos de contexto para seguir esta hierarquia:
+Explique detalhadamente:
 
-1. Requisitos explicitamente definidos como obrigatórios nas diretrizes de teste ou nas regras de negócio aplicáveis.
-2. Estrutura esperada do evento, incluindo propriedades obrigatórias, tipos, formatos e requisitos de representação dinâmica.
-3. Valores de referência apresentados no documento de contexto, tratados como sugestões ou exemplos quando não houver uma restrição explícita.
+- Como iniciar o Gemini CLI.
+- Qual diretório deve estar aberto.
+- Como carregar as instruções do agente.
+- Qual prompt ou comando inicial deve ser utilizado.
+- Como fornecer o relatório de execução.
+- Como informar o ambiente.
+- Como indicar as contas necessárias.
+- Como acompanhar a execução.
+- Como identificar se o agente está funcionando corretamente.
+- Onde encontrar o PDF executivo gerado.
 
-O agente não deve presumir que todo valor presente no documento de contexto é obrigatório.
+Inclua um exemplo realista de utilização, adaptado ao funcionamento encontrado no repositório.
 
-Da mesma forma, não deve presumir que todo valor é opcional. Quando houver uma regra de negócio explícita ou um requisito de valor obrigatório, esse requisito deverá ser respeitado.
+A pessoa deve conseguir reproduzir o processo seguindo o documento.
 
-Se não for possível determinar se um valor é obrigatório ou apenas exemplificativo, registre a ambiguidade para análise, em vez de inventar uma regra ou reprovar automaticamente o caso apenas pela diferença de valor.
+### Etapa 10: encerramento e reutilização
 
-## 7. Atualização do relatório PDF
+Explique:
 
-Atualize o PDF gerado pelo agente para incluir uma seção específica denominada **"Avisos e Divergências de Valores"**.
+- Como finalizar a execução.
+- Onde ficam os relatórios.
+- Onde ficam os logs e evidências.
+- Como iniciar uma nova execução.
+- Quais etapas não precisam ser repetidas.
+- Como atualizar o repositório quando houver uma nova versão do agente.
+- Como atualizar dependências com segurança.
 
-Essa seção deve apresentar as diferenças entre os valores de referência e os valores encontrados durante a execução que não constituam falhas estruturais ou violações de requisitos obrigatórios.
+---
 
-Para cada divergência, apresentar:
+## 4. Terceira etapa: análise de restrições corporativas
 
-- Evento.
-- Propriedade.
-- Valor de referência.
-- Valor encontrado.
-- Classificação: `AVISO`.
-- Justificativa resumida.
+Não quero apenas um tutorial técnico.
 
-Exemplo de apresentação:
+Quero uma análise considerando que o público-alvo trabalha em uma empresa com máquinas corporativas, políticas de segurança, restrições de instalação e acessos controlados.
 
-| Evento | Propriedade | Valor de referência | Valor encontrado | Classificação |
+Para cada dependência identificada, classifique a atividade em uma destas categorias:
+
+- **AUTONOMIA DO USUÁRIO:** provavelmente pode ser realizada pelo próprio profissional de WA.
+- **SUPORTE DE TI:** pode exigir autorização, instalação administrativa ou liberação de rede.
+- **SUPORTE DE QA:** depende de informações, configurações ou orientações fornecidas pelo time que mantém o agente.
+
+Monte uma matriz contendo:
+
+| Item | Finalidade | Quem precisa atuar | Possível impedimento | Como resolver |
 |---|---|---|---|---|
-| view_item | ecommerce.currency | BRL | USD | AVISO |
-| view_item | ecommerce.items[0].item_category | Eletrodomésticos | Lavadoras | AVISO |
 
-Os valores acima são ilustrativos. A divergência de moeda somente deve ser apresentada como aviso se não houver um requisito explícito determinando a moeda esperada para aquele cenário.
+Avalie especialmente:
 
-### Regras para o relatório
+- Instalação do Git.
+- Acesso ao GitHub.
+- Instalação do Node.js.
+- Acesso ao npm Registry.
+- Instalação do Gemini CLI.
+- Autenticação Google.
+- Permissões de utilização do Gemini.
+- Instalação de navegadores do Playwright.
+- Configuração de servidores MCP.
+- Acesso aos ambientes de teste.
+- Acesso a contas e credenciais.
+- Firewall, proxy e restrições de rede.
+- Políticas de execução de arquivos .bat e scripts.
+- Antivírus e ferramentas de proteção corporativa.
 
-- Os avisos não devem ser contabilizados como testes reprovados.
-- O status do caso de teste deve permanecer `PASSED` quando as condições estruturais e os requisitos obrigatórios forem atendidos.
-- As falhas estruturais devem continuar na seção de falhas, com seus respectivos motivos e evidências.
-- O resumo executivo deve distinguir a quantidade de casos aprovados, reprovados e avisos de divergência.
-- Quando não houver divergências, apresentar uma mensagem indicando que nenhum aviso de divergência de valores foi identificado.
-- A seção de avisos não deve substituir nem ocultar evidências de falhas reais.
+Não assuma que todos esses itens são obrigatoriamente impedimentos. Diferencie os requisitos técnicos reais das possíveis restrições de TI.
 
-## 8. Compatibilidade com a arquitetura atual
+---
 
-Antes de implementar a mudança:
+## 5. Quarta etapa: diagnóstico de viabilidade
 
-1. Analise as instruções atuais do agente.
-2. Identifique como os documentos de referência são interpretados.
-3. Localize a lógica responsável pela comparação de propriedades e valores.
-4. Identifique onde o resultado `PASSED` ou `FAILED` é definido.
-5. Localize a estrutura de dados utilizada para montar o relatório PDF.
-6. Verifique se a classificação das falhas está centralizada ou distribuída entre diferentes etapas do agente.
+Após a investigação, apresente uma avaliação objetiva sobre a viabilidade de disponibilizar o agente para o time de WA.
 
-Implemente a alteração na arquitetura existente, reutilizando os mecanismos de validação e geração de relatórios sempre que possível.
+Responda:
 
-Não reescreva o agente do zero e não remova regras que não estejam diretamente relacionadas a essa melhoria.
+1. É tecnicamente possível instalar e executar o agente em uma máquina de um profissional de WA?
+2. Quais são os requisitos obrigatórios?
+3. Quais são os principais pontos de dependência da TI?
+4. Quais etapas podem ser automatizadas?
+5. Quais etapas necessariamente precisam de intervenção humana?
+6. Existem dependências que tornam a distribuição inviável ou muito complexa?
+7. É possível criar um script de preparação para automatizar parte da configuração?
+8. É possível criar um script simples para iniciar o agente sem precisar conhecer comandos do Gemini CLI?
+9. Quais são os riscos de cada abordagem?
+10. Qual seria o caminho mais simples para uma POC com poucas pessoas?
 
-Sempre que possível, mantenha separadas as responsabilidades de:
+Apresente também uma estimativa qualitativa de complexidade:
 
-- Validação estrutural.
-- Validação de requisitos explicitamente obrigatórios.
-- Registro de divergências informativas.
-- Consolidação do resultado do caso de teste.
-- Geração do relatório.
+- Baixa.
+- Média.
+- Alta.
 
-## 9. Testes de regressão obrigatórios
+Não invente estimativas de tempo sem informações suficientes.
 
-Crie ou adapte testes para demonstrar os seguintes comportamentos:
+---
 
-1. Evento com estrutura correta e todos os valores iguais aos do contexto: `PASSED`, sem avisos.
-2. Evento com estrutura correta e um valor diferente do contexto, sem restrição obrigatória: `PASSED`, com aviso.
-3. Evento com estrutura correta e múltiplos valores diferentes do contexto, sem restrições obrigatórias: `PASSED`, com todos os avisos registrados.
-4. Evento com propriedade obrigatória ausente: `FAILED`.
-5. Evento com tipo de dado incorreto em uma propriedade cujo tipo seja obrigatório: `FAILED`.
-6. Evento com variável dinâmica enviada literalmente: `FAILED`.
-7. Evento com valor diferente que viola uma regra de negócio explicitamente obrigatória: `FAILED`.
-8. Evento esperado não encontrado: manter o comportamento de reprovação existente.
-9. Evento com divergência informativa e uma falha estrutural simultaneamente: `FAILED`, com a falha estrutural registrada e a divergência informativa preservada quando relevante.
-10. PDF contendo casos aprovados, reprovados e avisos: apresentar corretamente os status e as respectivas contagens.
+## 6. Quinta etapa: produção do documento final em PDF
 
-## 10. Critérios de aceite
+Após concluir a investigação, produza um documento profissional, didático e completo, preferencialmente em português brasileiro, com o título:
 
-A melhoria estará concluída quando:
+**WA TEST AGENT | GUIA DE INSTALAÇÃO, CONFIGURAÇÃO E EXECUÇÃO**
 
-- O documento de contexto deixar de ser tratado como fonte absoluta para todos os valores.
-- A estrutura obrigatória do evento continuar sendo validada rigorosamente.
-- Divergências de valores não obrigatórios forem registradas como avisos.
-- Os avisos não provocarem reprovação do caso de teste.
-- Requisitos de negócio explicitamente obrigatórios continuarem sendo respeitados.
-- Propriedades ausentes, tipos incorretos e placeholders literais continuarem sendo tratados como falhas quando aplicável.
-- O PDF apresentar a nova seção de avisos e suas evidências.
-- As contagens e os resultados finais permanecerem consistentes com os status dos casos de teste.
-- Os testes de regressão demonstrarem que as regras anteriores de validação estrutural continuam funcionando.
+O documento deve ser pensado para uma pessoa que não possui experiência com ferramentas de desenvolvimento.
 
-## 11. Entrega esperada
+### Estrutura obrigatória do PDF
 
-Ao concluir a implementação, apresente:
+1. Capa.
+2. Apresentação do WA Test Agent.
+3. Como o agente funciona, em linguagem simples.
+4. Visão geral das ferramentas envolvidas.
+5. Pré-requisitos.
+6. Passo a passo completo de instalação.
+7. Configuração do Gemini CLI.
+8. Configuração do Playwright e MCP.
+9. Configuração de ambientes e credenciais.
+10. Primeira execução.
+11. Como gerar e localizar o PDF executivo.
+12. Como utilizar o agente em execuções futuras.
+13. Problemas comuns e soluções.
+14. Matriz de responsabilidades entre WA, QA e TI.
+15. Checklist final de instalação e validação.
+16. Avaliação de viabilidade e recomendações para a POC.
+17. Glossário de termos técnicos.
 
-1. Resumo das alterações realizadas.
-2. Arquivos modificados e responsabilidades de cada um.
-3. Explicação da nova lógica de classificação.
-4. Exemplos de divergências tratadas como avisos e de violações que continuam gerando falhas.
-5. Evidências dos testes executados.
-6. Exemplo ou evidência do PDF atualizado.
-7. Limitações ou ambiguidades identificadas durante a implementação.
+### Orientações de linguagem e apresentação
 
-Não declare a melhoria concluída apenas com base na atualização das instruções do agente. Verifique se a lógica efetiva de avaliação e a geração do PDF respeitam o novo comportamento.
+- Utilize linguagem simples, clara e didática.
+- Explique os termos técnicos na primeira vez que aparecerem.
+- Não pressuponha que o leitor conhece terminal ou linha de comando.
+- Sempre que apresentar um comando, explique onde executá-lo e o que ele faz.
+- Separe visualmente os comandos que o usuário deve copiar e executar.
+- Inclua exemplos de telas ou descrições visuais quando isso ajudar.
+- Utilize avisos para etapas que exigem suporte de TI.
+- Diferencie claramente instalação, configuração e execução.
+- Não utilize informações fictícias sobre o projeto.
+- Não inclua credenciais, tokens ou informações sensíveis.
+- Utilize links oficiais para download das ferramentas.
+- Identifique versões e datas de referência.
+- Não omita dependências difíceis ou etapas que possam gerar impedimentos.
 
-**Regra fundamental:** a estrutura e os requisitos explicitamente obrigatórios determinam a aprovação do caso de teste. Valores de referência que sejam apenas exemplificativos servem para identificar divergências e gerar avisos, mas não devem reprovar o teste.
+O documento deve ter qualidade suficiente para ser compartilhado diretamente com o time de WA e utilizado como material de onboarding.
+
+---
+
+## 7. Regras obrigatórias de investigação
+
+Estas regras são fundamentais:
+
+1. Não altere arquivos do projeto.
+2. Não altere prompts ou instruções do agente.
+3. Não execute testes que possam gerar alterações em ambientes externos sem autorização.
+4. Não exponha credenciais.
+5. Não invente comandos, dependências, versões ou caminhos.
+6. Quando não for possível confirmar alguma informação, marque explicitamente como "PENDENTE DE VALIDAÇÃO".
+7. Diferencie requisitos confirmados no código de recomendações e possíveis requisitos corporativos.
+8. Sempre que possível, indique o arquivo do repositório que fundamenta cada requisito.
+9. Não assuma que o README contém todas as informações necessárias.
+10. Faça a análise de ponta a ponta, incluindo dependências indiretas.
+
+**IMPORTANTE: o resultado não deve ser apenas uma análise técnica ou uma lista de dependências. Quero um verdadeiro manual operacional, capaz de orientar uma pessoa sem familiaridade com desenvolvimento desde o primeiro download até a primeira execução bem-sucedida do WA Test Agent.**
+
+Ao finalizar, disponibilize o PDF gerado e, se possível, também uma versão editável em Markdown para que o time de QA possa revisar e atualizar a documentação futuramente.
