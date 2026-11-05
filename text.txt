@@ -1,401 +1,477 @@
-# Projeto: Evolução do E2E Healer para um fluxo automatizado de manutenção de testes
+# Projeto: Evolução do E2E Healer - Arquitetura Local CLI e Execução Automatizada
 
-## 1. Contexto do projeto
+## 1. Contexto
 
-Estou trabalhando na evolução de um agente de IA chamado E2E Healer, desenvolvido para auxiliar na manutenção de testes automatizados com Playwright.
+Estamos desenvolvendo uma evolução de um agente de IA chamado E2E Healer, utilizado para manutenção de testes automatizados com Playwright.
 
-Atualmente, temos duas frentes de automação:
+Atualmente, temos duas suítes:
 
-- **Smoke Tests:** suíte crítica, bem mantida e que deve permanecer independente e protegida.
-- **End-to-End Tests (E2E):** suíte mais abrangente, que contempla os demais cenários de testes automatizados. Atualmente, apresenta um volume significativo de falhas relacionadas à falta de manutenção, testes desatualizados e problemas de automação.
+- Smoke Tests: suíte crítica, atualizada e que deve permanecer independente.
+- End-to-End Tests: suíte abrangente, com diversos testes que atualmente apresentam problemas de manutenção e falhas acumuladas.
 
-O principal problema é que, mesmo possuindo um agente capaz de diagnosticar falhas e propor correções, ainda dependemos de intervenção humana para identificar os problemas, acionar o agente, acompanhar as correções e encontrar disponibilidade para realizar a manutenção.
+Já existe um agente capaz de executar testes, identificar falhas, agrupar ocorrências, investigar causas e propor correções.
 
-O objetivo é evoluir o agente para um fluxo automatizado, integrado à pipeline de E2E, capaz de identificar falhas, investigar suas causas, propor correções, identificar os responsáveis pelos testes e entregar uma Pull Request para revisão humana.
+O objetivo agora é evoluir essa arquitetura para permitir que o processo de manutenção seja iniciado de maneira controlada, preferencialmente por uma execução local via terminal.
 
-## 2. Objetivo da evolução
+Também queremos manter a possibilidade de uma execução automatizada pela pipeline, como uma segunda modalidade de utilização.
 
-Quero investigar a viabilidade de implementar um fluxo em que a própria pipeline de testes E2E acione automaticamente o processo de manutenção sempre que identificar falhas.
+## 2. Objetivo principal
 
-O fluxo esperado é:
+Investigar e propor uma arquitetura em que o E2E Healer possa ser acionado localmente por um comando no terminal.
 
-1. A pipeline E2E executa os testes normalmente.
-2. Ao identificar falhas, disponibiliza os resultados, logs e evidências para o processo de manutenção.
-3. Um orquestrador aciona o agente E2E Healer.
-4. O agente analisa e classifica as falhas.
-5. Agrupa ocorrências relacionadas para evitar investigações e correções duplicadas.
-6. Investiga a causa raiz de cada grupo de falhas.
-7. Consulta o documento de ownership fornecido para identificar a squad e os responsáveis por cada teste.
-8. Propõe e aplica as correções em uma branch isolada.
-9. Executa novamente os testes afetados e as validações necessárias.
-10. Caso a correção seja considerada válida, cria uma Pull Request em Draft.
-11. Envia uma notificação direcionada no Google Chat para a pessoa ou squad responsável.
-12. A pessoa recebe o diagnóstico, as evidências e o link da PR para revisar, testar e aprovar a correção.
+O usuário deverá conseguir selecionar uma marca ou um escopo específico de testes e iniciar todo o processo de diagnóstico e manutenção.
 
-**Importante: não queremos integrar o Jira nesse fluxo.**
+O fluxo deverá:
 
-A gestão das ocorrências será feita por meio das notificações e das Pull Requests no repositório.
+1. Identificar os testes pertencentes à marca selecionada.
+2. Executar os testes E2E.
+3. Coletar os resultados e evidências.
+4. Classificar as falhas.
+5. Agrupar ocorrências relacionadas.
+6. Identificar a causa raiz.
+7. Consultar o documento de ownership para identificar a squad responsável.
+8. Acionar o E2E Healer para propor e aplicar correções.
+9. Executar novamente os testes afetados.
+10. Criar branches isoladas.
+11. Criar Pull Requests em Draft quando as correções forem validadas.
+12. Notificar os responsáveis pelo Google Chat.
 
-A aprovação e o merge devem permanecer sob responsabilidade humana.
+Não queremos integração com Jira.
 
-## 3. Materiais disponíveis para análise
+A gestão do processo será realizada por meio das Pull Requests, notificações e registros locais das execuções.
 
-Você terá acesso a três fontes principais:
+A aprovação e o merge das alterações devem continuar sob responsabilidade humana.
 
-### A. Repositório do E2E Healer
+## 3. Primeira frente: execução local via terminal
 
-Investigue o código existente para compreender:
+Esta é a modalidade prioritária da investigação.
 
-- Arquitetura atual do agente.
-- Como ocorre a orquestração dos testes.
-- Como os lotes de falhas são definidos.
-- Como ocorre a classificação dos erros.
-- Como é realizada a análise de causa raiz.
-- Como são gerados os patches.
-- Como funciona o processo de aprovação e aplicação das correções.
-- Como ocorre a validação posterior.
-- Quais ferramentas MCP estão integradas.
-- Quais dependências externas são utilizadas.
-- Quais limitações existem atualmente.
+Queremos aproveitar a arquitetura atual do agente e adicionar uma camada de execução local.
 
-Não proponha reconstruir funcionalidades que já estejam implementadas e funcionando.
+Investigue como implementar uma interface CLI para iniciar o fluxo.
 
-Identifique quais componentes podem ser reutilizados e quais precisam ser evoluídos.
+Exemplos de comandos desejados:
 
-### B. Documento de ownership dos testes
+```bash
+npm run healer -- --brand=brastemp
 
-Será fornecido um documento que relaciona os testes, funcionalidades e áreas de produto às respectivas squads e responsáveis.
+npm run healer -- --brand=consul
 
-Analise sua estrutura e determine como ele pode ser consumido pelo agente.
+npm run healer -- --brand=whirlpool-colombia
 
-Queremos que o sistema consiga:
+npm run healer -- --brand=brastemp --scope=checkout
 
-- Identificar a responsabilidade de cada arquivo de teste.
-- Identificar a squad responsável pela funcionalidade.
-- Identificar o contato ou canal de comunicação adequado.
-- Relacionar cada falha à respectiva responsabilidade.
-- Tratar situações em que não exista correspondência.
-- Evitar encaminhamentos incorretos.
+npm run healer -- --brand=brastemp --dry-run
 
-Avalie se o documento pode ser consumido diretamente ou se seria melhor transformá-lo em uma estrutura padronizada, como JSON ou YAML.
+npm run healer -- --brand=brastemp --no-publish
 
-O documento deve ser tratado como fonte de referência para ownership, sem permitir que o modelo invente responsáveis ou associações.
+npm run healer -- --status
 
-### C. Configuração atual da pipeline
+npm run healer -- --resume=<execution-id>
+```
 
-Investigue detalhadamente a configuração da pipeline responsável pelos testes E2E.
+Esses comandos são referências para a interface desejada. Avalie a melhor implementação considerando a estrutura tecnológica existente.
 
-Identifique:
+### 3.1. Seleção de marcas
 
+Investigue como identificar os testes relacionados a cada marca.
+
+Considere a possibilidade de existirem:
+
+- Diretórios específicos.
 - Arquivos de configuração.
-- Triggers atuais.
-- Jobs e stages.
-- Estratégia de execução dos testes.
-- Estratégia de paralelização.
-- Tratamento de falhas.
-- Disponibilização de relatórios.
-- Armazenamento de artefatos.
-- Logs e evidências.
+- Tags nos testes.
+- Projetos Playwright separados.
 - Variáveis de ambiente.
-- Secrets e permissões.
-- Integrações externas.
-- Recursos disponíveis para executar scripts ou serviços adicionais.
+- Diferentes ambientes e URLs.
+- Diferentes configurações de execução.
 
-Verifique também como a pipeline diferencia falhas de testes, falhas de infraestrutura e falhas na própria execução.
+Não presuma como os testes estão organizados. Inspecione o repositório.
 
-A suíte Smoke deve permanecer independente. Não queremos alterar seu comportamento ou adicionar dependências ao seu fluxo.
+Proponha uma estratégia de identificação confiável dos testes por marca.
 
-## 4. Arquitetura desejada
+### 3.2. Execução controlada
 
-Investigue a possibilidade de implementar os seguintes componentes:
+A execução local deve permitir controlar o volume de testes processados.
 
-### 4.1. Failure Orchestrator
+Investigue:
 
-Uma camada responsável por receber os resultados da pipeline e controlar o processo de manutenção.
+- Paralelização.
+- Quantidade de workers.
+- Execução em lotes.
+- Consumo de memória.
+- Consumo de CPU.
+- Inicialização dos browsers.
+- Tempo máximo de execução.
+- Controle de processos.
+- Tratamento de interrupções.
+- Persistência dos resultados.
 
-Responsabilidades:
+Não queremos sobrecarregar a máquina local.
 
-- Capturar os testes que falharam.
-- Consolidar resultados.
-- Agrupar falhas relacionadas.
-- Evitar processamento duplicado.
-- Acionar o E2E Healer.
-- Controlar o estado de cada ocorrência.
-- Registrar os resultados do processo.
+Avalie uma configuração que permita executar uma marca inteira de forma controlada.
 
-### 4.2. AI Diagnosis
+Também considere que diferentes marcas podem possuir diferentes configurações de ambiente.
 
-Utilizar o agente existente para investigar as falhas.
+### 3.3. Coleta de evidências
 
-O sistema deve classificar as ocorrências, considerando pelo menos:
+O agente deve coletar informações suficientes para realizar diagnósticos confiáveis.
 
-- Problemas de manutenção dos testes.
-- Regressões reais do produto.
-- Falhas de ambiente.
-- Testes intermitentes (flaky tests).
-- Problemas de massa de dados.
-- Falhas inconclusivas.
+Investigue o reaproveitamento dos recursos do Playwright:
 
-Somente falhas com evidências suficientes de problemas de manutenção devem avançar para uma proposta de correção automatizada.
+- Test results.
+- HTML report.
+- JSON report.
+- Traces.
+- Screenshots.
+- Vídeos, quando disponíveis.
+- Logs.
+- Informações de timeout.
+- Stack traces.
 
-O agente não deve modificar testes para mascarar defeitos reais do produto ou problemas de infraestrutura.
+Avalie quais evidências precisam ser armazenadas e por quanto tempo.
 
-### 4.3. Ownership Resolver
+Evite encaminhar todos os arquivos desnecessariamente ao modelo de IA.
 
-Componente responsável por consultar o documento de ownership e identificar a squad responsável.
+### 3.4. Processamento inteligente
 
-Deve existir uma estratégia de fallback para situações em que o responsável não possa ser identificado com segurança.
+Após a execução, o sistema deve analisar os resultados.
 
-Nesses casos, a ocorrência deve ser encaminhada para uma triagem geral, sem atribuição inventada.
+Não queremos que o agente consuma recursos de IA desnecessariamente.
 
-### 4.4. Automated Healing
+Proponha uma estratégia em que:
 
-Reutilizar o E2E Healer existente para:
+1. Os testes sejam executados normalmente.
+2. Os resultados sejam consolidados.
+3. Os testes aprovados sejam descartados da etapa de diagnóstico.
+4. As falhas sejam agrupadas por semelhança.
+5. As falhas duplicadas sejam identificadas.
+6. Apenas ocorrências relevantes sejam encaminhadas ao Healer.
 
-- Investigar os problemas.
-- Propor alterações.
-- Gerar patches.
-- Aplicar as correções em uma branch isolada.
-- Executar os testes afetados.
-- Executar testes relacionados quando necessário.
-- Registrar as evidências da validação.
+Considere também a possibilidade de reutilizar diagnósticos anteriores quando a falha apresentar a mesma assinatura e as evidências não tiverem mudado.
 
-Avalie a melhor estratégia para criação e nomenclatura de branches, isolamento de execuções e prevenção de conflitos entre correções simultâneas.
+## 4. Segunda frente: integração com pipeline
 
-### 4.5. Pull Request Automation
+Além da execução local, queremos investigar a possibilidade de disponibilizar o mesmo fluxo por meio de uma pipeline exclusiva para manutenção.
 
-Quando uma correção passar pelas validações, o sistema deverá:
+Não queremos tornar a pipeline Smoke dependente do agente.
 
-- Criar uma branch de manutenção.
-- Aplicar as alterações.
-- Criar uma Pull Request em Draft.
-- Apresentar o diagnóstico da falha.
-- Explicar a causa raiz identificada.
-- Descrever as alterações realizadas.
-- Informar os testes executados.
-- Apresentar os resultados das validações.
-- Identificar a squad responsável.
-- Incluir links para os logs e evidências originais.
+Investigue:
 
-A PR deverá solicitar revisão humana.
+- Como a pipeline atual executa os testes E2E.
+- Como poderia iniciar o processo de manutenção.
+- Como transferir os resultados para o Healer.
+- Como executar o agente no ambiente da pipeline.
+- Como armazenar os resultados e evidências.
+- Como publicar branches e PRs.
+- Como notificar os responsáveis.
 
-O agente não poderá realizar merge, aprovar a própria alteração ou modificar diretamente a branch principal.
+Compare duas possibilidades:
 
-### 4.6. Google Chat Notification
+A. Pipeline de manutenção independente, acionada manualmente.
 
-Investigue como integrar o fluxo ao Google Chat já utilizado pela equipe.
+B. Pipeline de manutenção acionada automaticamente após a identificação de falhas em outra execução.
 
-A notificação deverá ser direcionada à pessoa, squad ou espaço responsável, de acordo com o documento de ownership.
+Não assuma que precisamos implementar as duas.
 
-A mensagem deverá conter:
+Apresente vantagens, limitações, requisitos e complexidade de cada alternativa.
 
-- Identificação do teste ou funcionalidade.
-- Descrição resumida do problema.
+## 5. Arquitetura compartilhada
+
+As modalidades local e pipeline devem, preferencialmente, compartilhar os mesmos componentes internos.
+
+Investigue a possibilidade de utilizar:
+
+### Execution Manager
+
+Responsável por controlar a execução, identificar o escopo e acompanhar o estado do processo.
+
+### Brand Resolver
+
+Responsável por determinar quais testes, ambientes e configurações correspondem à marca selecionada.
+
+### Failure Analyzer
+
+Responsável por consolidar, classificar e agrupar as falhas.
+
+### Ownership Resolver
+
+Responsável por consultar o documento de ownership e identificar os responsáveis.
+
+### E2E Healer
+
+Reutilização do agente atual para diagnóstico, geração de patches e aplicação de correções.
+
+### Validation Engine
+
+Responsável por executar os testes novamente e validar as alterações propostas.
+
+### GitHub Integration
+
+Responsável pela criação de branches e Pull Requests.
+
+### Google Chat Integration
+
+Responsável pelas notificações direcionadas aos responsáveis.
+
+Avalie se essa divisão faz sentido considerando a arquitetura atual. Não crie abstrações desnecessárias se os componentes existentes já atenderem às necessidades.
+
+## 6. Integração com documento de ownership
+
+Será fornecido um documento que relaciona os testes e áreas de produto às respectivas squads e responsáveis.
+
+Analise sua estrutura.
+
+Determine:
+
+- Como o documento pode ser consumido.
+- Se deve ser convertido para JSON ou YAML.
+- Como identificar a responsabilidade de cada arquivo.
+- Como relacionar um teste à funcionalidade correspondente.
+- Como determinar o canal ou pessoa que deve receber a notificação.
+- Como tratar dados ausentes ou ambiguidades.
+
+A associação deve ser fundamentada no documento, sem inventar responsáveis.
+
+## 7. Criação de Pull Requests
+
+O objetivo final é entregar a correção para revisão humana.
+
+Investigue como o agente pode:
+
+1. Criar uma branch isolada.
+2. Aplicar o patch.
+3. Executar os testes afetados.
+4. Validar os testes relacionados.
+5. Registrar evidências.
+6. Criar uma Pull Request em Draft.
+7. Relacionar a PR ao responsável identificado.
+
+A PR deverá conter:
+
+- Nome da marca.
+- Arquivos afetados.
+- Testes relacionados.
+- Descrição da falha.
 - Causa raiz identificada.
-- Solução proposta.
+- Correção aplicada.
 - Resultado das validações.
-- Link da Pull Request.
-- Link das evidências da execução.
+- Evidências.
+- Responsável sugerido.
 
-Evite notificações genéricas ou mensagens repetitivas.
+O agente não poderá:
 
-Se não houver uma correção segura, a notificação deverá informar que existe uma falha aguardando investigação humana, sem apresentar uma solução como se estivesse validada.
+- Fazer merge.
+- Aprovar a própria PR.
+- Alterar diretamente a branch principal.
+- Modificar código de produto.
+- Alterar configurações críticas sem autorização.
 
-## 5. Investigação de infraestrutura e credenciais
+Investigue também como evitar conflitos entre múltiplas execuções locais.
 
-Esta é uma das partes mais importantes da análise.
+## 8. Notificações pelo Google Chat
 
-Quero que você investigue exatamente o que a infraestrutura atual permite e o que precisaria ser disponibilizado para implementar a solução.
+O sistema deve enviar uma mensagem direcionada à squad ou pessoa responsável.
 
-Identifique todas as integrações e credenciais necessárias.
+A mensagem deverá apresentar:
 
-Considere, mas não assuma previamente, a necessidade de:
+- Marca.
+- Funcionalidade.
+- Testes afetados.
+- Resumo do diagnóstico.
+- Causa raiz.
+- Solução proposta.
+- Resultado da validação.
+- Link da PR.
 
-- Token de acesso ao repositório.
-- Permissões para criar branches.
-- Permissões para publicar Pull Requests.
-- Acesso aos resultados e artefatos da pipeline.
-- Credenciais ou autenticação para executar o agente.
-- API Key ou autenticação do modelo de IA.
-- Acesso ao Google Chat.
-- Webhook ou autenticação para envio de mensagens.
-- Permissões de execução de scripts.
-- Acesso a variáveis de ambiente.
-- Armazenamento temporário de resultados e patches.
+Para falhas sem correção segura, deve existir uma notificação de investigação pendente, sem gerar uma PR artificial.
 
-Para cada dependência, informe:
+Avalie as opções de integração com Google Chat e os requisitos de autenticação.
 
-1. Qual é a finalidade.
-2. Por que é necessária.
-3. Onde deverá ser configurada.
-4. Qual nível de permissão será necessário.
-5. Se já existe algo equivalente no ambiente atual.
-6. Se existe alguma alternativa mais simples.
+## 9. API Keys, autenticação e custos
 
-Não solicite, exponha ou reproduza valores de secrets. Trabalhe somente com os nomes das variáveis e requisitos de configuração.
+Esta seção é prioritária.
+
+Queremos entender como executar o agente localmente sem criar dependências desnecessárias de novas API Keys.
+
+Investigue a arquitetura atual de autenticação do E2E Healer.
+
+Considere especialmente:
+
+- Gemini CLI.
+- Autenticação já disponível no ambiente local.
+- Uso de API Key.
+- Autenticação por conta.
+- Limitações de quotas.
+- Rate limits.
+- Consumo de tokens.
+- Limites de contexto.
+- Possibilidade de execução por lotes.
+- Reutilização de diagnósticos.
+- Estratégias de redução de chamadas ao modelo.
+
+Não assuma que a autenticação existente permite qualquer modalidade de utilização. Verifique as possibilidades reais e suas limitações.
+
+Queremos responder:
+
+1. É possível reutilizar a autenticação atual do Gemini CLI?
+2. É necessário criar uma API Key adicional?
+3. Quais são as limitações de cada modalidade?
+4. Como evitar consumo desnecessário?
+5. Como controlar o custo por marca?
+6. Como permitir interrupção e retomada de execuções?
+
+Investigue separadamente as credenciais necessárias para:
+
+- Acesso ao modelo de IA.
+- Acesso ao GitHub.
+- Criação de branches e PRs.
+- Envio de mensagens ao Google Chat.
+- Acesso aos ambientes de teste.
+
+Não exponha valores de credenciais ou secrets.
 
 Priorize o princípio do menor privilégio.
 
-## 6. Estratégia de execução e segurança
+## 10. Persistência e retomada de execução
 
-Avalie como implementar o fluxo sem comprometer a estabilidade das pipelines.
+Uma execução pode ser longa.
+
+Investigue a necessidade de um mecanismo local de persistência para registrar:
+
+- ID da execução.
+- Marca.
+- Testes executados.
+- Falhas identificadas.
+- Diagnósticos.
+- Patches gerados.
+- Validações.
+- Branches criadas.
+- Pull Requests.
+- Notificações enviadas.
+- Status atual.
+
+Avalie se JSON, SQLite ou outra solução simples seria suficiente.
+
+Queremos evitar que uma interrupção obrigue o usuário a executar novamente todos os testes e repetir diagnósticos já concluídos.
+
+Também precisamos evitar duplicidade de PRs e notificações.
+
+## 11. Segurança e confiabilidade
 
 Considere:
 
-- Execução isolada do agente.
-- Limites de concorrência.
-- Timeout por investigação.
-- Limite de tentativas de correção.
-- Controle de custos e consumo de IA.
-- Deduplicação de ocorrências.
-- Prevenção de loops de execução.
-- Tratamento de falhas do próprio agente.
+- Branches isoladas.
+- Working tree limpa antes de iniciar.
+- Proteção contra alterações locais do usuário.
+- Controle de permissões.
+- Validação antes da publicação.
+- Limites de tentativas de correção.
+- Controle de concorrência.
+- Timeout.
+- Logs.
+- Auditoria.
 - Proteção de credenciais.
-- Isolamento entre branches.
-- Prevenção de alterações fora do escopo dos testes.
-- Auditoria das alterações realizadas.
+- Prevenção de execução recursiva.
+- Tratamento de erros do agente.
 
-Um ponto especialmente importante: a criação de uma PR não deve gerar um novo ciclo automático de manutenção que fique se repetindo indefinidamente.
+O agente deve distinguir problemas de manutenção de testes de regressões reais do produto.
 
-Avalie como identificar execuções originadas pelo próprio agente e evitar esse comportamento.
+Não queremos corrigir testes para esconder problemas existentes na aplicação.
 
-Também avalie como garantir que o agente não tenha acesso irrestrito a credenciais de publicação ou aprovação.
+## 12. Comparação das arquiteturas
 
-## 7. Cenário esperado de funcionamento
+Produza uma comparação entre:
 
-Utilize o cenário abaixo para validar a arquitetura proposta.
+- Execução local via CLI.
+- Pipeline exclusiva de manutenção.
+- Execução automática disparada pela pipeline E2E.
 
-Uma execução da pipeline E2E identifica 15 testes falhando.
+Compare:
 
-O sistema:
+- Complexidade de implementação.
+- Dependência de infraestrutura.
+- Necessidade de credenciais.
+- Consumo de recursos.
+- Controle humano.
+- Facilidade de manutenção.
+- Escalabilidade.
+- Custos.
+- Confiabilidade.
+- Facilidade de adoção pelas squads.
 
-1. Captura os 15 resultados.
-2. Identifica que alguns possuem causas semelhantes.
-3. Agrupa as ocorrências relacionadas.
-4. Classifica cada grupo.
-5. Identifica quais falhas são efetivamente problemas de manutenção.
-6. Consulta o documento de ownership.
-7. Identifica as squads responsáveis.
-8. Aciona o Healer para as correções elegíveis.
-9. Cria branches isoladas.
-10. Aplica e valida as correções.
-11. Abre Pull Requests em Draft para as correções aprovadas pelo processo automatizado.
-12. Notifica os responsáveis no Google Chat.
-13. Registra quais ocorrências foram corrigidas, quais estão aguardando revisão e quais precisam de investigação humana.
+Apresente uma recomendação fundamentada.
 
-Ao final, cada responsável deve receber somente as ocorrências pertinentes à sua área, com informações suficientes para entender e revisar a solução.
+## 13. Entregáveis obrigatórios
 
-## 8. Entregáveis obrigatórios da análise
+Produza um relatório técnico contendo:
 
-Quero que você produza um relatório técnico estruturado, dividido nas seguintes seções:
+### Parte 1: Diagnóstico do agente atual
 
-### Parte 1: Diagnóstico do ambiente atual
+Arquitetura, funcionalidades, dependências e possibilidades de reaproveitamento.
 
-- Arquitetura existente.
-- Funcionamento atual do E2E Healer.
-- Funcionamento da pipeline.
-- Integrações já disponíveis.
-- Recursos que podem ser reutilizados.
-- Limitações identificadas.
+### Parte 2: Diagnóstico da execução E2E
 
-### Parte 2: Arquitetura proposta
+Organização dos testes, identificação das marcas e possibilidades de execução local.
 
-- Desenho da arquitetura completa.
-- Responsabilidade de cada componente.
-- Fluxo de execução ponta a ponta.
-- Integração entre pipeline, Healer, repositório e Google Chat.
+### Parte 3: Arquitetura local via CLI
 
-Inclua um diagrama de arquitetura e um fluxograma do processo.
+Diagrama, componentes, fluxo e comandos recomendados.
 
-### Parte 3: Requisitos de infraestrutura
+### Parte 4: Arquitetura via pipeline
 
-Crie uma tabela com:
+Diagrama, componentes e requisitos de infraestrutura.
 
-- Recurso necessário.
-- Finalidade.
-- Credencial ou permissão necessária.
-- Local de configuração.
-- Disponibilidade atual.
-- Ação necessária.
+### Parte 5: Arquitetura compartilhada
 
-Diferencie claramente recursos existentes de novos requisitos.
+Identifique o que pode ser reutilizado entre as duas modalidades.
 
-### Parte 4: Análise da pipeline
+### Parte 6: Autenticação e credenciais
 
-Explique exatamente:
+Tabela detalhada de requisitos, permissões e disponibilidade atual.
 
-- Onde o novo fluxo deve ser acionado.
-- Quais arquivos precisam ser modificados.
-- Quais jobs ou stages precisam ser adicionados.
-- Como transferir os resultados da execução para o agente.
-- Como executar o agente sem bloquear desnecessariamente a pipeline original.
-- Como armazenar e recuperar evidências.
-- Como impedir execuções recursivas.
+### Parte 7: Consumo de IA e otimização
 
-### Parte 5: Integração com ownership
+Estratégias para controlar quotas, custos, contexto e volume de chamadas.
 
-- Estrutura atual do documento.
-- Melhor formato de consumo.
-- Estratégia de identificação dos responsáveis.
-- Tratamento de ambiguidades.
-- Estratégia de fallback.
+### Parte 8: Integração com GitHub e Google Chat
 
-### Parte 6: Estratégia de Pull Requests e notificações
+Estratégia de criação de PRs e direcionamento de notificações.
 
-- Processo de criação das branches.
-- Processo de criação das PRs.
-- Estrutura recomendada para descrição das PRs.
-- Validações obrigatórias.
-- Integração com Google Chat.
-- Estratégia de direcionamento das notificações.
+### Parte 9: Persistência e retomada
 
-### Parte 7: Plano de implementação
+Proposta de gerenciamento das execuções.
 
-Divida a implementação em etapas independentes, indicando:
+### Parte 10: Comparativo e recomendação
 
-- O que precisa ser desenvolvido.
-- Dependências.
-- Arquivos ou componentes envolvidos.
-- Pré-requisitos.
-- Critérios de conclusão.
-- Riscos técnicos.
+Indique qual modalidade deve ser priorizada e justifique tecnicamente.
 
-Priorize uma implementação incremental, começando por um MVP.
+### Parte 11: Plano de implementação
 
-### Parte 8: Riscos e recomendações
+Divida em etapas, com dependências, arquivos envolvidos, riscos e critérios de conclusão.
 
-Apresente os principais riscos técnicos, operacionais e de segurança.
+### Parte 12: Conclusão executiva
 
-Destaque especialmente os pontos que podem comprometer a confiabilidade das correções propostas pelo agente.
+Responda:
 
-### Parte 9: Conclusão executiva
+- O que conseguimos implementar com a arquitetura atual?
+- O que precisa ser desenvolvido?
+- Quais novas credenciais são necessárias?
+- Qual seria o MVP mais simples?
+- Qual é a melhor forma de começar?
 
-Responda objetivamente:
+## 14. Diretrizes de investigação
 
-- É viável implementar essa solução com a infraestrutura atual?
-- O que já temos disponível?
-- O que precisamos desenvolver?
-- Quais credenciais e permissões precisam ser solicitadas?
-- Qual seria a arquitetura mais simples e segura?
-- Qual seria o primeiro passo para iniciar a implementação?
-
-## 9. Diretrizes importantes
-
-- Não implemente nenhuma alteração neste momento.
-- Não modifique arquivos do repositório.
-- Não altere configurações da pipeline.
+- Não implemente alterações neste momento.
+- Não modifique arquivos.
 - Não crie branches ou Pull Requests.
 - Não envie notificações.
-- Não presuma que ferramentas, permissões ou integrações estão disponíveis sem verificar.
-- Não invente configurações ou recursos que não foram identificados.
-- Não proponha uma reconstrução completa do agente sem demonstrar a necessidade.
-- Não envolva Jira em nenhuma etapa.
-- Preserve a independência da suíte Smoke.
-- Diferencie fatos encontrados no repositório de recomendações arquiteturais.
-- Sempre indique os caminhos dos arquivos e trechos de configuração que sustentam suas conclusões.
+- Não altere configurações das pipelines.
+- Inspecione o repositório antes de recomendar mudanças.
+- Reutilize a arquitetura existente sempre que possível.
+- Não presuma disponibilidade de ferramentas ou credenciais.
+- Diferencie fatos identificados de sugestões.
+- Cite os caminhos dos arquivos analisados.
+- Se não conseguir confirmar alguma informação, declare explicitamente a limitação.
 
-Se alguma informação necessária não estiver disponível, identifique a lacuna e explique exatamente o que precisa ser fornecido.
-
-**Resultado esperado:** um documento técnico que permita entender o estado atual do projeto, visualizar a arquitetura futura, identificar os requisitos de infraestrutura e credenciais e planejar a implementação do fluxo automatizado de manutenção E2E.
-
-A análise deve ser suficientemente detalhada para servir como base de planejamento e posteriormente orientar a implementação por etapas.
+**Resultado esperado:** um documento técnico que permita decidir como evoluir o E2E Healer para um sistema com execução local via terminal e possibilidade de execução por pipeline, mantendo o mesmo motor de diagnóstico e correção, com criação de PRs e notificações direcionadas, sem integração com Jira.
