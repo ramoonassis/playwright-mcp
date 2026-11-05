@@ -1,382 +1,401 @@
-# MISSÃO: ANÁLISE TÉCNICA E DOCUMENTAÇÃO COMPLETA DE INSTALAÇÃO E EXECUÇÃO DO WA TEST AGENT
+# Projeto: Evolução do E2E Healer para um fluxo automatizado de manutenção de testes
 
-## 1. Contexto e objetivo
+## 1. Contexto do projeto
 
-Você está trabalhando dentro do repositório GitHub de um projeto de QA que contém um agente de inteligência artificial responsável pela execução de testes de Web Analytics (WA).
+Estou trabalhando na evolução de um agente de IA chamado E2E Healer, desenvolvido para auxiliar na manutenção de testes automatizados com Playwright.
 
-Esse agente é utilizado pelo time de QA para executar casos de teste relacionados à validação de eventos de Web Analytics em aplicações web.
+Atualmente, temos duas frentes de automação:
 
-Seu funcionamento envolve, entre outras atividades:
+- **Smoke Tests:** suíte crítica, bem mantida e que deve permanecer independente e protegida.
+- **End-to-End Tests (E2E):** suíte mais abrangente, que contempla os demais cenários de testes automatizados. Atualmente, apresenta um volume significativo de falhas relacionadas à falta de manutenção, testes desatualizados e problemas de automação.
 
-- Receber um relatório ou documento contendo as instruções de execução.
-- Interpretar os casos de teste, cenários, eventos e respectivas propriedades e valores esperados.
-- Identificar os ambientes que devem ser utilizados.
-- Utilizar contas e credenciais de teste.
-- Navegar pela aplicação e executar as ações descritas nos casos de teste.
-- Identificar e validar os eventos de Web Analytics.
-- Avaliar se os eventos e suas estruturas estão de acordo com os critérios esperados.
-- Consolidar os resultados das validações.
-- Gerar um PDF executivo contendo o resultado da execução e as respectivas evidências.
+O principal problema é que, mesmo possuindo um agente capaz de diagnosticar falhas e propor correções, ainda dependemos de intervenção humana para identificar os problemas, acionar o agente, acompanhar as correções e encontrar disponibilidade para realizar a manutenção.
 
-Atualmente, o agente está integrado ao projeto de automação Playwright e é acionado por meio do Gemini CLI.
+O objetivo é evoluir o agente para um fluxo automatizado, integrado à pipeline de E2E, capaz de identificar falhas, investigar suas causas, propor correções, identificar os responsáveis pelos testes e entregar uma Pull Request para revisão humana.
 
-O objetivo desta atividade é permitir que profissionais do time de WA, que não possuem familiaridade com ferramentas de desenvolvimento, consigam instalar, configurar e utilizar o agente em suas próprias máquinas corporativas.
+## 2. Objetivo da evolução
 
-Esses profissionais não necessariamente conhecem ferramentas como VS Code, Node.js, npm, Git, Playwright, MCP ou Gemini CLI.
+Quero investigar a viabilidade de implementar um fluxo em que a própria pipeline de testes E2E acione automaticamente o processo de manutenção sempre que identificar falhas.
 
-Portanto, precisamos produzir uma documentação extremamente didática, detalhada e confiável, que explique todo o processo necessário para que uma pessoa consiga sair de uma máquina sem o ambiente configurado até conseguir executar o WA Test Agent com sucesso.
+O fluxo esperado é:
 
-**IMPORTANTE: não assuma que as dependências são apenas Node.js, Playwright e Gemini CLI. Investigue o repositório e identifique todas as dependências reais e necessárias para o funcionamento do agente.**
+1. A pipeline E2E executa os testes normalmente.
+2. Ao identificar falhas, disponibiliza os resultados, logs e evidências para o processo de manutenção.
+3. Um orquestrador aciona o agente E2E Healer.
+4. O agente analisa e classifica as falhas.
+5. Agrupa ocorrências relacionadas para evitar investigações e correções duplicadas.
+6. Investiga a causa raiz de cada grupo de falhas.
+7. Consulta o documento de ownership fornecido para identificar a squad e os responsáveis por cada teste.
+8. Propõe e aplica as correções em uma branch isolada.
+9. Executa novamente os testes afetados e as validações necessárias.
+10. Caso a correção seja considerada válida, cria uma Pull Request em Draft.
+11. Envia uma notificação direcionada no Google Chat para a pessoa ou squad responsável.
+12. A pessoa recebe o diagnóstico, as evidências e o link da PR para revisar, testar e aprovar a correção.
 
----
+**Importante: não queremos integrar o Jira nesse fluxo.**
 
-## 2. Primeira etapa: investigação completa do repositório
+A gestão das ocorrências será feita por meio das notificações e das Pull Requests no repositório.
 
-Antes de escrever qualquer documentação, faça uma análise técnica do repositório.
+A aprovação e o merge devem permanecer sob responsabilidade humana.
 
-Investigue especialmente:
+## 3. Materiais disponíveis para análise
 
-1. Estrutura de diretórios e arquivos.
-2. README e demais documentos existentes.
-3. package.json e package-lock.json.
-4. Versões de Node.js e npm exigidas ou recomendadas.
-5. Dependências declaradas no projeto.
-6. Dependências adicionais utilizadas pelo agente.
-7. Arquivos de configuração do Playwright.
-8. Configurações de MCP.
-9. Arquivos de configuração do Gemini CLI.
-10. Arquivos GEMINI.md, AGENTS.md ou equivalentes, caso existam.
-11. Prompts, instruções e arquivos de contexto utilizados pelo agente.
-12. Scripts de inicialização e execução.
-13. Variáveis de ambiente e arquivos .env.
-14. Integrações externas utilizadas durante a execução.
-15. Configurações de navegador e dependências do Playwright.
-16. Contas, autenticações e mecanismos de acesso aos ambientes.
-17. Bibliotecas, ferramentas ou serviços auxiliares necessários.
-18. Mecanismos utilizados para gerar o PDF executivo.
-19. Caminhos de entrada e saída dos arquivos.
-20. Qualquer configuração específica necessária para que o agente consiga executar suas atividades.
+Você terá acesso a três fontes principais:
 
-Não se limite aos arquivos mais evidentes. Faça uma análise das referências entre scripts, configurações e dependências para identificar requisitos indiretos.
+### A. Repositório do E2E Healer
 
-Sempre que identificar uma dependência, explique:
+Investigue o código existente para compreender:
 
-- Qual é a dependência.
-- Qual é sua finalidade.
-- Por que o agente precisa dela.
-- Se precisa ser instalada manualmente.
-- Se é instalada automaticamente por outro processo.
-- Qual versão deve ser utilizada, quando aplicável.
-- Como verificar se está corretamente instalada.
+- Arquitetura atual do agente.
+- Como ocorre a orquestração dos testes.
+- Como os lotes de falhas são definidos.
+- Como ocorre a classificação dos erros.
+- Como é realizada a análise de causa raiz.
+- Como são gerados os patches.
+- Como funciona o processo de aprovação e aplicação das correções.
+- Como ocorre a validação posterior.
+- Quais ferramentas MCP estão integradas.
+- Quais dependências externas são utilizadas.
+- Quais limitações existem atualmente.
 
-Não exponha valores de credenciais, tokens, senhas ou outros segredos encontrados durante a análise. Apenas identifique a existência dessas configurações e explique como devem ser fornecidas de maneira segura.
+Não proponha reconstruir funcionalidades que já estejam implementadas e funcionando.
 
----
+Identifique quais componentes podem ser reutilizados e quais precisam ser evoluídos.
 
-## 3. Segunda etapa: mapear o processo completo de instalação
+### B. Documento de ownership dos testes
 
-Com base exclusivamente na arquitetura encontrada no repositório, construa um passo a passo de instalação, respeitando a ordem correta das dependências.
+Será fornecido um documento que relaciona os testes, funcionalidades e áreas de produto às respectivas squads e responsáveis.
 
-Considere como cenário principal uma máquina corporativa Windows, utilizada por uma pessoa que não trabalha diariamente com desenvolvimento de software.
+Analise sua estrutura e determine como ele pode ser consumido pelo agente.
 
-O processo deve começar do zero, considerando que a máquina pode não possuir nenhuma das ferramentas necessárias.
+Queremos que o sistema consiga:
 
-Investigue e documente as seguintes etapas:
+- Identificar a responsabilidade de cada arquivo de teste.
+- Identificar a squad responsável pela funcionalidade.
+- Identificar o contato ou canal de comunicação adequado.
+- Relacionar cada falha à respectiva responsabilidade.
+- Tratar situações em que não exista correspondência.
+- Evitar encaminhamentos incorretos.
 
-### Etapa 1: pré-requisitos e preparação da máquina
+Avalie se o documento pode ser consumido diretamente ou se seria melhor transformá-lo em uma estrutura padronizada, como JSON ou YAML.
 
-Explique:
+O documento deve ser tratado como fonte de referência para ownership, sem permitir que o modelo invente responsáveis ou associações.
 
-- Qual sistema operacional é necessário.
-- Quais requisitos mínimos devem ser atendidos.
-- Se é necessário possuir permissões de administrador.
-- Se existem restrições comuns de máquinas corporativas que podem impedir a instalação.
-- Quais atividades provavelmente precisarão de suporte do time de TI.
+### C. Configuração atual da pipeline
 
-Crie uma lista de verificação inicial.
-
-### Etapa 2: acesso ao GitHub e download do repositório
-
-Explique:
-
-- Se o usuário precisa possuir uma conta GitHub.
-- Se precisa receber autorização de acesso ao repositório.
-- Como acessar o repositório.
-- Como baixar ou clonar o projeto.
-- Diferença entre baixar o ZIP e utilizar Git para clonar o repositório.
-- Qual alternativa é mais recomendada para o cenário.
-- Como identificar se o download foi realizado corretamente.
-- Em qual pasta o projeto deve ficar.
-
-Inclua os comandos necessários, explicando o que cada comando faz.
-
-### Etapa 3: instalação do Node.js e npm
-
-Explique:
-
-- Por que Node.js é necessário.
-- Qual versão é compatível com o projeto.
-- Onde obter o instalador oficial.
-- Como instalar no Windows.
-- Se o npm já vem incluído.
-- Como verificar a instalação.
-- Quais erros podem ocorrer.
-- Quando será necessário acionar a TI.
-
-Inclua os comandos de verificação.
-
-### Etapa 4: instalação das dependências do projeto
-
-Investigue o package.json e o package-lock.json.
-
-Explique:
-
-- O que são dependências de um projeto.
-- O que é npm.
-- O que significa executar npm install ou npm ci.
-- Qual comando deve ser utilizado neste projeto.
-- Em qual diretório o comando deve ser executado.
-- Como saber se a instalação terminou corretamente.
-- Quais erros podem ocorrer em uma rede corporativa.
-
-Não recomende comandos genéricos sem verificar sua compatibilidade com o projeto.
-
-### Etapa 5: instalação e configuração do Playwright
-
-Explique:
-
-- Qual é o papel do Playwright nesse agente.
-- Se ele já está declarado nas dependências do projeto.
-- Se precisa de instalação adicional.
-- Como instalar os navegadores necessários.
-- Quais navegadores são utilizados pelo agente.
-- Se existem dependências adicionais do sistema operacional.
-- Como verificar se o Playwright está funcionando.
-
-Inclua os comandos exatos e explique o resultado esperado.
-
-### Etapa 6: instalação e autenticação do Gemini CLI
-
-Essa etapa merece atenção especial.
-
-Explique:
-
-- O que é o Gemini CLI.
-- Qual é sua função dentro do WA Test Agent.
-- Como instalar ou executar o Gemini CLI.
-- Qual versão deve ser utilizada.
-- Se o projeto utiliza instalação global, npx ou outro mecanismo.
-- Como realizar a autenticação.
-- Se é necessária uma conta Google.
-- Quais permissões ou acessos precisam ser concedidos.
-- Se existe necessidade de assinatura, licença ou habilitação específica.
-- Como verificar se o Gemini CLI está funcionando.
-- Como identificar problemas de autenticação.
-- Quais restrições corporativas podem impedir sua utilização.
-
-Investigue também como o agente é efetivamente acionado pelo Gemini CLI.
-
-Não invente comandos. Identifique o mecanismo real utilizado pelo projeto.
-
-### Etapa 7: configuração do MCP e demais integrações
-
-Investigue todas as configurações MCP necessárias.
-
-Explique:
-
-- O que é MCP de maneira simples.
-- Qual é sua função na execução do agente.
-- Quais servidores MCP são utilizados.
-- Como esses servidores são inicializados.
-- Quais dependências possuem.
-- Se precisam de configurações adicionais.
-- Se exigem autenticação.
-- Se dependem de variáveis de ambiente.
-- Como verificar se estão disponíveis para o Gemini CLI.
-
-Investigue também outras integrações externas necessárias para a execução.
-
-### Etapa 8: configuração de credenciais e ambientes de teste
-
-Explique como o usuário deve configurar as informações necessárias para acessar os ambientes.
+Investigue detalhadamente a configuração da pipeline responsável pelos testes E2E.
 
 Identifique:
 
+- Arquivos de configuração.
+- Triggers atuais.
+- Jobs e stages.
+- Estratégia de execução dos testes.
+- Estratégia de paralelização.
+- Tratamento de falhas.
+- Disponibilização de relatórios.
+- Armazenamento de artefatos.
+- Logs e evidências.
 - Variáveis de ambiente.
-- Arquivos .env necessários.
-- Contas de teste.
-- Perfis de usuário.
-- URLs dos ambientes.
-- Tokens ou mecanismos de autenticação.
-- Dependências externas utilizadas para receber códigos de login, caso existam.
+- Secrets e permissões.
+- Integrações externas.
+- Recursos disponíveis para executar scripts ou serviços adicionais.
 
-Diferencie claramente informações que devem ser fornecidas pelo time de WA, pelo time de QA e pelo time de TI.
+Verifique também como a pipeline diferencia falhas de testes, falhas de infraestrutura e falhas na própria execução.
 
-Nunca inclua credenciais reais no documento.
+A suíte Smoke deve permanecer independente. Não queremos alterar seu comportamento ou adicionar dependências ao seu fluxo.
 
-### Etapa 9: primeira execução do agente
+## 4. Arquitetura desejada
 
-Esta é uma das etapas mais importantes.
+Investigue a possibilidade de implementar os seguintes componentes:
 
-Explique detalhadamente:
+### 4.1. Failure Orchestrator
 
-- Como iniciar o Gemini CLI.
-- Qual diretório deve estar aberto.
-- Como carregar as instruções do agente.
-- Qual prompt ou comando inicial deve ser utilizado.
-- Como fornecer o relatório de execução.
-- Como informar o ambiente.
-- Como indicar as contas necessárias.
-- Como acompanhar a execução.
-- Como identificar se o agente está funcionando corretamente.
-- Onde encontrar o PDF executivo gerado.
+Uma camada responsável por receber os resultados da pipeline e controlar o processo de manutenção.
 
-Inclua um exemplo realista de utilização, adaptado ao funcionamento encontrado no repositório.
+Responsabilidades:
 
-A pessoa deve conseguir reproduzir o processo seguindo o documento.
+- Capturar os testes que falharam.
+- Consolidar resultados.
+- Agrupar falhas relacionadas.
+- Evitar processamento duplicado.
+- Acionar o E2E Healer.
+- Controlar o estado de cada ocorrência.
+- Registrar os resultados do processo.
 
-### Etapa 10: encerramento e reutilização
+### 4.2. AI Diagnosis
 
-Explique:
+Utilizar o agente existente para investigar as falhas.
 
-- Como finalizar a execução.
-- Onde ficam os relatórios.
-- Onde ficam os logs e evidências.
-- Como iniciar uma nova execução.
-- Quais etapas não precisam ser repetidas.
-- Como atualizar o repositório quando houver uma nova versão do agente.
-- Como atualizar dependências com segurança.
+O sistema deve classificar as ocorrências, considerando pelo menos:
 
----
+- Problemas de manutenção dos testes.
+- Regressões reais do produto.
+- Falhas de ambiente.
+- Testes intermitentes (flaky tests).
+- Problemas de massa de dados.
+- Falhas inconclusivas.
 
-## 4. Terceira etapa: análise de restrições corporativas
+Somente falhas com evidências suficientes de problemas de manutenção devem avançar para uma proposta de correção automatizada.
 
-Não quero apenas um tutorial técnico.
+O agente não deve modificar testes para mascarar defeitos reais do produto ou problemas de infraestrutura.
 
-Quero uma análise considerando que o público-alvo trabalha em uma empresa com máquinas corporativas, políticas de segurança, restrições de instalação e acessos controlados.
+### 4.3. Ownership Resolver
 
-Para cada dependência identificada, classifique a atividade em uma destas categorias:
+Componente responsável por consultar o documento de ownership e identificar a squad responsável.
 
-- **AUTONOMIA DO USUÁRIO:** provavelmente pode ser realizada pelo próprio profissional de WA.
-- **SUPORTE DE TI:** pode exigir autorização, instalação administrativa ou liberação de rede.
-- **SUPORTE DE QA:** depende de informações, configurações ou orientações fornecidas pelo time que mantém o agente.
+Deve existir uma estratégia de fallback para situações em que o responsável não possa ser identificado com segurança.
 
-Monte uma matriz contendo:
+Nesses casos, a ocorrência deve ser encaminhada para uma triagem geral, sem atribuição inventada.
 
-| Item | Finalidade | Quem precisa atuar | Possível impedimento | Como resolver |
-|---|---|---|---|---|
+### 4.4. Automated Healing
 
-Avalie especialmente:
+Reutilizar o E2E Healer existente para:
 
-- Instalação do Git.
-- Acesso ao GitHub.
-- Instalação do Node.js.
-- Acesso ao npm Registry.
-- Instalação do Gemini CLI.
-- Autenticação Google.
-- Permissões de utilização do Gemini.
-- Instalação de navegadores do Playwright.
-- Configuração de servidores MCP.
-- Acesso aos ambientes de teste.
-- Acesso a contas e credenciais.
-- Firewall, proxy e restrições de rede.
-- Políticas de execução de arquivos .bat e scripts.
-- Antivírus e ferramentas de proteção corporativa.
+- Investigar os problemas.
+- Propor alterações.
+- Gerar patches.
+- Aplicar as correções em uma branch isolada.
+- Executar os testes afetados.
+- Executar testes relacionados quando necessário.
+- Registrar as evidências da validação.
 
-Não assuma que todos esses itens são obrigatoriamente impedimentos. Diferencie os requisitos técnicos reais das possíveis restrições de TI.
+Avalie a melhor estratégia para criação e nomenclatura de branches, isolamento de execuções e prevenção de conflitos entre correções simultâneas.
 
----
+### 4.5. Pull Request Automation
 
-## 5. Quarta etapa: diagnóstico de viabilidade
+Quando uma correção passar pelas validações, o sistema deverá:
 
-Após a investigação, apresente uma avaliação objetiva sobre a viabilidade de disponibilizar o agente para o time de WA.
+- Criar uma branch de manutenção.
+- Aplicar as alterações.
+- Criar uma Pull Request em Draft.
+- Apresentar o diagnóstico da falha.
+- Explicar a causa raiz identificada.
+- Descrever as alterações realizadas.
+- Informar os testes executados.
+- Apresentar os resultados das validações.
+- Identificar a squad responsável.
+- Incluir links para os logs e evidências originais.
 
-Responda:
+A PR deverá solicitar revisão humana.
 
-1. É tecnicamente possível instalar e executar o agente em uma máquina de um profissional de WA?
-2. Quais são os requisitos obrigatórios?
-3. Quais são os principais pontos de dependência da TI?
-4. Quais etapas podem ser automatizadas?
-5. Quais etapas necessariamente precisam de intervenção humana?
-6. Existem dependências que tornam a distribuição inviável ou muito complexa?
-7. É possível criar um script de preparação para automatizar parte da configuração?
-8. É possível criar um script simples para iniciar o agente sem precisar conhecer comandos do Gemini CLI?
-9. Quais são os riscos de cada abordagem?
-10. Qual seria o caminho mais simples para uma POC com poucas pessoas?
+O agente não poderá realizar merge, aprovar a própria alteração ou modificar diretamente a branch principal.
 
-Apresente também uma estimativa qualitativa de complexidade:
+### 4.6. Google Chat Notification
 
-- Baixa.
-- Média.
-- Alta.
+Investigue como integrar o fluxo ao Google Chat já utilizado pela equipe.
 
-Não invente estimativas de tempo sem informações suficientes.
+A notificação deverá ser direcionada à pessoa, squad ou espaço responsável, de acordo com o documento de ownership.
 
----
+A mensagem deverá conter:
 
-## 6. Quinta etapa: produção do documento final em PDF
+- Identificação do teste ou funcionalidade.
+- Descrição resumida do problema.
+- Causa raiz identificada.
+- Solução proposta.
+- Resultado das validações.
+- Link da Pull Request.
+- Link das evidências da execução.
 
-Após concluir a investigação, produza um documento profissional, didático e completo, preferencialmente em português brasileiro, com o título:
+Evite notificações genéricas ou mensagens repetitivas.
 
-**WA TEST AGENT | GUIA DE INSTALAÇÃO, CONFIGURAÇÃO E EXECUÇÃO**
+Se não houver uma correção segura, a notificação deverá informar que existe uma falha aguardando investigação humana, sem apresentar uma solução como se estivesse validada.
 
-O documento deve ser pensado para uma pessoa que não possui experiência com ferramentas de desenvolvimento.
+## 5. Investigação de infraestrutura e credenciais
 
-### Estrutura obrigatória do PDF
+Esta é uma das partes mais importantes da análise.
 
-1. Capa.
-2. Apresentação do WA Test Agent.
-3. Como o agente funciona, em linguagem simples.
-4. Visão geral das ferramentas envolvidas.
-5. Pré-requisitos.
-6. Passo a passo completo de instalação.
-7. Configuração do Gemini CLI.
-8. Configuração do Playwright e MCP.
-9. Configuração de ambientes e credenciais.
-10. Primeira execução.
-11. Como gerar e localizar o PDF executivo.
-12. Como utilizar o agente em execuções futuras.
-13. Problemas comuns e soluções.
-14. Matriz de responsabilidades entre WA, QA e TI.
-15. Checklist final de instalação e validação.
-16. Avaliação de viabilidade e recomendações para a POC.
-17. Glossário de termos técnicos.
+Quero que você investigue exatamente o que a infraestrutura atual permite e o que precisaria ser disponibilizado para implementar a solução.
 
-### Orientações de linguagem e apresentação
+Identifique todas as integrações e credenciais necessárias.
 
-- Utilize linguagem simples, clara e didática.
-- Explique os termos técnicos na primeira vez que aparecerem.
-- Não pressuponha que o leitor conhece terminal ou linha de comando.
-- Sempre que apresentar um comando, explique onde executá-lo e o que ele faz.
-- Separe visualmente os comandos que o usuário deve copiar e executar.
-- Inclua exemplos de telas ou descrições visuais quando isso ajudar.
-- Utilize avisos para etapas que exigem suporte de TI.
-- Diferencie claramente instalação, configuração e execução.
-- Não utilize informações fictícias sobre o projeto.
-- Não inclua credenciais, tokens ou informações sensíveis.
-- Utilize links oficiais para download das ferramentas.
-- Identifique versões e datas de referência.
-- Não omita dependências difíceis ou etapas que possam gerar impedimentos.
+Considere, mas não assuma previamente, a necessidade de:
 
-O documento deve ter qualidade suficiente para ser compartilhado diretamente com o time de WA e utilizado como material de onboarding.
+- Token de acesso ao repositório.
+- Permissões para criar branches.
+- Permissões para publicar Pull Requests.
+- Acesso aos resultados e artefatos da pipeline.
+- Credenciais ou autenticação para executar o agente.
+- API Key ou autenticação do modelo de IA.
+- Acesso ao Google Chat.
+- Webhook ou autenticação para envio de mensagens.
+- Permissões de execução de scripts.
+- Acesso a variáveis de ambiente.
+- Armazenamento temporário de resultados e patches.
 
----
+Para cada dependência, informe:
 
-## 7. Regras obrigatórias de investigação
+1. Qual é a finalidade.
+2. Por que é necessária.
+3. Onde deverá ser configurada.
+4. Qual nível de permissão será necessário.
+5. Se já existe algo equivalente no ambiente atual.
+6. Se existe alguma alternativa mais simples.
 
-Estas regras são fundamentais:
+Não solicite, exponha ou reproduza valores de secrets. Trabalhe somente com os nomes das variáveis e requisitos de configuração.
 
-1. Não altere arquivos do projeto.
-2. Não altere prompts ou instruções do agente.
-3. Não execute testes que possam gerar alterações em ambientes externos sem autorização.
-4. Não exponha credenciais.
-5. Não invente comandos, dependências, versões ou caminhos.
-6. Quando não for possível confirmar alguma informação, marque explicitamente como "PENDENTE DE VALIDAÇÃO".
-7. Diferencie requisitos confirmados no código de recomendações e possíveis requisitos corporativos.
-8. Sempre que possível, indique o arquivo do repositório que fundamenta cada requisito.
-9. Não assuma que o README contém todas as informações necessárias.
-10. Faça a análise de ponta a ponta, incluindo dependências indiretas.
+Priorize o princípio do menor privilégio.
 
-**IMPORTANTE: o resultado não deve ser apenas uma análise técnica ou uma lista de dependências. Quero um verdadeiro manual operacional, capaz de orientar uma pessoa sem familiaridade com desenvolvimento desde o primeiro download até a primeira execução bem-sucedida do WA Test Agent.**
+## 6. Estratégia de execução e segurança
 
-Ao finalizar, disponibilize o PDF gerado e, se possível, também uma versão editável em Markdown para que o time de QA possa revisar e atualizar a documentação futuramente.
+Avalie como implementar o fluxo sem comprometer a estabilidade das pipelines.
+
+Considere:
+
+- Execução isolada do agente.
+- Limites de concorrência.
+- Timeout por investigação.
+- Limite de tentativas de correção.
+- Controle de custos e consumo de IA.
+- Deduplicação de ocorrências.
+- Prevenção de loops de execução.
+- Tratamento de falhas do próprio agente.
+- Proteção de credenciais.
+- Isolamento entre branches.
+- Prevenção de alterações fora do escopo dos testes.
+- Auditoria das alterações realizadas.
+
+Um ponto especialmente importante: a criação de uma PR não deve gerar um novo ciclo automático de manutenção que fique se repetindo indefinidamente.
+
+Avalie como identificar execuções originadas pelo próprio agente e evitar esse comportamento.
+
+Também avalie como garantir que o agente não tenha acesso irrestrito a credenciais de publicação ou aprovação.
+
+## 7. Cenário esperado de funcionamento
+
+Utilize o cenário abaixo para validar a arquitetura proposta.
+
+Uma execução da pipeline E2E identifica 15 testes falhando.
+
+O sistema:
+
+1. Captura os 15 resultados.
+2. Identifica que alguns possuem causas semelhantes.
+3. Agrupa as ocorrências relacionadas.
+4. Classifica cada grupo.
+5. Identifica quais falhas são efetivamente problemas de manutenção.
+6. Consulta o documento de ownership.
+7. Identifica as squads responsáveis.
+8. Aciona o Healer para as correções elegíveis.
+9. Cria branches isoladas.
+10. Aplica e valida as correções.
+11. Abre Pull Requests em Draft para as correções aprovadas pelo processo automatizado.
+12. Notifica os responsáveis no Google Chat.
+13. Registra quais ocorrências foram corrigidas, quais estão aguardando revisão e quais precisam de investigação humana.
+
+Ao final, cada responsável deve receber somente as ocorrências pertinentes à sua área, com informações suficientes para entender e revisar a solução.
+
+## 8. Entregáveis obrigatórios da análise
+
+Quero que você produza um relatório técnico estruturado, dividido nas seguintes seções:
+
+### Parte 1: Diagnóstico do ambiente atual
+
+- Arquitetura existente.
+- Funcionamento atual do E2E Healer.
+- Funcionamento da pipeline.
+- Integrações já disponíveis.
+- Recursos que podem ser reutilizados.
+- Limitações identificadas.
+
+### Parte 2: Arquitetura proposta
+
+- Desenho da arquitetura completa.
+- Responsabilidade de cada componente.
+- Fluxo de execução ponta a ponta.
+- Integração entre pipeline, Healer, repositório e Google Chat.
+
+Inclua um diagrama de arquitetura e um fluxograma do processo.
+
+### Parte 3: Requisitos de infraestrutura
+
+Crie uma tabela com:
+
+- Recurso necessário.
+- Finalidade.
+- Credencial ou permissão necessária.
+- Local de configuração.
+- Disponibilidade atual.
+- Ação necessária.
+
+Diferencie claramente recursos existentes de novos requisitos.
+
+### Parte 4: Análise da pipeline
+
+Explique exatamente:
+
+- Onde o novo fluxo deve ser acionado.
+- Quais arquivos precisam ser modificados.
+- Quais jobs ou stages precisam ser adicionados.
+- Como transferir os resultados da execução para o agente.
+- Como executar o agente sem bloquear desnecessariamente a pipeline original.
+- Como armazenar e recuperar evidências.
+- Como impedir execuções recursivas.
+
+### Parte 5: Integração com ownership
+
+- Estrutura atual do documento.
+- Melhor formato de consumo.
+- Estratégia de identificação dos responsáveis.
+- Tratamento de ambiguidades.
+- Estratégia de fallback.
+
+### Parte 6: Estratégia de Pull Requests e notificações
+
+- Processo de criação das branches.
+- Processo de criação das PRs.
+- Estrutura recomendada para descrição das PRs.
+- Validações obrigatórias.
+- Integração com Google Chat.
+- Estratégia de direcionamento das notificações.
+
+### Parte 7: Plano de implementação
+
+Divida a implementação em etapas independentes, indicando:
+
+- O que precisa ser desenvolvido.
+- Dependências.
+- Arquivos ou componentes envolvidos.
+- Pré-requisitos.
+- Critérios de conclusão.
+- Riscos técnicos.
+
+Priorize uma implementação incremental, começando por um MVP.
+
+### Parte 8: Riscos e recomendações
+
+Apresente os principais riscos técnicos, operacionais e de segurança.
+
+Destaque especialmente os pontos que podem comprometer a confiabilidade das correções propostas pelo agente.
+
+### Parte 9: Conclusão executiva
+
+Responda objetivamente:
+
+- É viável implementar essa solução com a infraestrutura atual?
+- O que já temos disponível?
+- O que precisamos desenvolver?
+- Quais credenciais e permissões precisam ser solicitadas?
+- Qual seria a arquitetura mais simples e segura?
+- Qual seria o primeiro passo para iniciar a implementação?
+
+## 9. Diretrizes importantes
+
+- Não implemente nenhuma alteração neste momento.
+- Não modifique arquivos do repositório.
+- Não altere configurações da pipeline.
+- Não crie branches ou Pull Requests.
+- Não envie notificações.
+- Não presuma que ferramentas, permissões ou integrações estão disponíveis sem verificar.
+- Não invente configurações ou recursos que não foram identificados.
+- Não proponha uma reconstrução completa do agente sem demonstrar a necessidade.
+- Não envolva Jira em nenhuma etapa.
+- Preserve a independência da suíte Smoke.
+- Diferencie fatos encontrados no repositório de recomendações arquiteturais.
+- Sempre indique os caminhos dos arquivos e trechos de configuração que sustentam suas conclusões.
+
+Se alguma informação necessária não estiver disponível, identifique a lacuna e explique exatamente o que precisa ser fornecido.
+
+**Resultado esperado:** um documento técnico que permita entender o estado atual do projeto, visualizar a arquitetura futura, identificar os requisitos de infraestrutura e credenciais e planejar a implementação do fluxo automatizado de manutenção E2E.
+
+A análise deve ser suficientemente detalhada para servir como base de planejamento e posteriormente orientar a implementação por etapas.
