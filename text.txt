@@ -1,477 +1,612 @@
-# Projeto: Evolução do E2E Healer - Arquitetura Local CLI e Execução Automatizada
+# PROJETO: FLAKE TEST DETECTOR
+## Agente inteligente de detecção, investigação e correção de falhas em testes E2E
 
-## 1. Contexto
+# 1. Visão geral
 
-Estamos desenvolvendo uma evolução de um agente de IA chamado E2E Healer, utilizado para manutenção de testes automatizados com Playwright.
+Desenvolva um agente de IA chamado **Flake Test Detector**, especializado em identificar padrões de falhas, investigar problemas de manutenção em testes automatizados e propor correções por meio de Pull Requests.
 
-Atualmente, temos duas suítes:
+O agente deverá aproveitar os dados históricos já produzidos pelas pipelines existentes de Test Change Trend, executadas pelo GitHub Actions.
 
-- Smoke Tests: suíte crítica, atualizada e que deve permanecer independente.
-- End-to-End Tests: suíte abrangente, com diversos testes que atualmente apresentam problemas de manutenção e falhas acumuladas.
+A proposta não é criar um novo executor de toda a suíte de testes nem substituir as pipelines atuais.
 
-Já existe um agente capaz de executar testes, identificar falhas, agrupar ocorrências, investigar causas e propor correções.
+Queremos aproveitar os resultados que já existem para identificar quais testes apresentam problemas recorrentes ou sinais de instabilidade.
 
-O objetivo agora é evoluir essa arquitetura para permitir que o processo de manutenção seja iniciado de maneira controlada, preferencialmente por uma execução local via terminal.
+A partir dessa identificação, o agente deverá investigar exclusivamente os testes candidatos, utilizando Playwright e Playwright MCP quando necessário.
 
-Também queremos manter a possibilidade de uma execução automatizada pela pipeline, como uma segunda modalidade de utilização.
+Quando encontrar evidências suficientes de um problema de manutenção, deverá propor uma correção, validar a alteração, criar uma branch e abrir uma Pull Request direcionada aos responsáveis identificados no documento de ownership.
 
-## 2. Objetivo principal
+O processo deverá terminar com uma notificação no Google Chat, contendo o diagnóstico e o link da PR.
 
-Investigar e propor uma arquitetura em que o E2E Healer possa ser acionado localmente por um comando no terminal.
+**Não utilizar Jira em nenhuma etapa.**
 
-O usuário deverá conseguir selecionar uma marca ou um escopo específico de testes e iniciar todo o processo de diagnóstico e manutenção.
+# 2. Objetivo principal
 
-O fluxo deverá:
+Construir um agente que consiga responder continuamente às seguintes perguntas:
 
-1. Identificar os testes pertencentes à marca selecionada.
-2. Executar os testes E2E.
-3. Coletar os resultados e evidências.
-4. Classificar as falhas.
-5. Agrupar ocorrências relacionadas.
-6. Identificar a causa raiz.
-7. Consultar o documento de ownership para identificar a squad responsável.
-8. Acionar o E2E Healer para propor e aplicar correções.
-9. Executar novamente os testes afetados.
-10. Criar branches isoladas.
-11. Criar Pull Requests em Draft quando as correções forem validadas.
-12. Notificar os responsáveis pelo Google Chat.
+- Quais testes estão falhando com frequência?
+- Quais testes apresentam comportamento intermitente?
+- Quais testes parecem estar desatualizados?
+- Quais falhas apresentam uma causa raiz recorrente?
+- Quais testes precisam de manutenção?
+- Quais falhas representam possíveis regressões reais do produto?
+- Quem é responsável por cada arquivo de teste?
+- Quais correções podem ser propostas e validadas automaticamente?
 
-Não queremos integração com Jira.
+O objetivo final é transformar dados históricos de execução em ações concretas de manutenção.
 
-A gestão do processo será realizada por meio das Pull Requests, notificações e registros locais das execuções.
+O agente deve reduzir a necessidade de investigação manual e entregar correções prontas para revisão humana.
 
-A aprovação e o merge das alterações devem continuar sob responsabilidade humana.
+# 3. Fontes de dados: GitHub Actions e Test Change Trend
 
-## 3. Primeira frente: execução local via terminal
+Esta é uma das partes mais importantes da arquitetura.
 
-Esta é a modalidade prioritária da investigação.
+Já existem pipelines de Test Change Trend que executam periodicamente e produzem dados sobre os testes automatizados.
 
-Queremos aproveitar a arquitetura atual do agente e adicionar uma camada de execução local.
+O Flake Test Detector deverá consumir essas informações, evitando criar uma nova rotina de execução de toda a suíte.
 
-Investigue como implementar uma interface CLI para iniciar o fluxo.
+## 3.1. Coleta histórica
 
-Exemplos de comandos desejados:
+O agente deverá acessar o GitHub Actions e investigar as últimas 10 execuções válidas das pipelines de Test Change Trend.
 
-```bash
-npm run healer -- --brand=brastemp
+Entenda por execução válida aquela que efetivamente concluiu a execução dos testes e disponibilizou dados suficientes para análise.
 
-npm run healer -- --brand=consul
+Não confunda uma execução da pipeline com uma execução individual de teste.
 
-npm run healer -- --brand=whirlpool-colombia
+Para cada execução, procure recuperar, quando disponíveis:
 
-npm run healer -- --brand=brastemp --scope=checkout
-
-npm run healer -- --brand=brastemp --dry-run
-
-npm run healer -- --brand=brastemp --no-publish
-
-npm run healer -- --status
-
-npm run healer -- --resume=<execution-id>
-```
-
-Esses comandos são referências para a interface desejada. Avalie a melhor implementação considerando a estrutura tecnológica existente.
-
-### 3.1. Seleção de marcas
-
-Investigue como identificar os testes relacionados a cada marca.
-
-Considere a possibilidade de existirem:
-
-- Diretórios específicos.
-- Arquivos de configuração.
-- Tags nos testes.
-- Projetos Playwright separados.
-- Variáveis de ambiente.
-- Diferentes ambientes e URLs.
-- Diferentes configurações de execução.
-
-Não presuma como os testes estão organizados. Inspecione o repositório.
-
-Proponha uma estratégia de identificação confiável dos testes por marca.
-
-### 3.2. Execução controlada
-
-A execução local deve permitir controlar o volume de testes processados.
-
-Investigue:
-
-- Paralelização.
-- Quantidade de workers.
-- Execução em lotes.
-- Consumo de memória.
-- Consumo de CPU.
-- Inicialização dos browsers.
-- Tempo máximo de execução.
-- Controle de processos.
-- Tratamento de interrupções.
-- Persistência dos resultados.
-
-Não queremos sobrecarregar a máquina local.
-
-Avalie uma configuração que permita executar uma marca inteira de forma controlada.
-
-Também considere que diferentes marcas podem possuir diferentes configurações de ambiente.
-
-### 3.3. Coleta de evidências
-
-O agente deve coletar informações suficientes para realizar diagnósticos confiáveis.
-
-Investigue o reaproveitamento dos recursos do Playwright:
-
-- Test results.
-- HTML report.
-- JSON report.
-- Traces.
-- Screenshots.
-- Vídeos, quando disponíveis.
-- Logs.
-- Informações de timeout.
-- Stack traces.
-
-Avalie quais evidências precisam ser armazenadas e por quanto tempo.
-
-Evite encaminhar todos os arquivos desnecessariamente ao modelo de IA.
-
-### 3.4. Processamento inteligente
-
-Após a execução, o sistema deve analisar os resultados.
-
-Não queremos que o agente consuma recursos de IA desnecessariamente.
-
-Proponha uma estratégia em que:
-
-1. Os testes sejam executados normalmente.
-2. Os resultados sejam consolidados.
-3. Os testes aprovados sejam descartados da etapa de diagnóstico.
-4. As falhas sejam agrupadas por semelhança.
-5. As falhas duplicadas sejam identificadas.
-6. Apenas ocorrências relevantes sejam encaminhadas ao Healer.
-
-Considere também a possibilidade de reutilizar diagnósticos anteriores quando a falha apresentar a mesma assinatura e as evidências não tiverem mudado.
-
-## 4. Segunda frente: integração com pipeline
-
-Além da execução local, queremos investigar a possibilidade de disponibilizar o mesmo fluxo por meio de uma pipeline exclusiva para manutenção.
-
-Não queremos tornar a pipeline Smoke dependente do agente.
-
-Investigue:
-
-- Como a pipeline atual executa os testes E2E.
-- Como poderia iniciar o processo de manutenção.
-- Como transferir os resultados para o Healer.
-- Como executar o agente no ambiente da pipeline.
-- Como armazenar os resultados e evidências.
-- Como publicar branches e PRs.
-- Como notificar os responsáveis.
-
-Compare duas possibilidades:
-
-A. Pipeline de manutenção independente, acionada manualmente.
-
-B. Pipeline de manutenção acionada automaticamente após a identificação de falhas em outra execução.
-
-Não assuma que precisamos implementar as duas.
-
-Apresente vantagens, limitações, requisitos e complexidade de cada alternativa.
-
-## 5. Arquitetura compartilhada
-
-As modalidades local e pipeline devem, preferencialmente, compartilhar os mesmos componentes internos.
-
-Investigue a possibilidade de utilizar:
-
-### Execution Manager
-
-Responsável por controlar a execução, identificar o escopo e acompanhar o estado do processo.
-
-### Brand Resolver
-
-Responsável por determinar quais testes, ambientes e configurações correspondem à marca selecionada.
-
-### Failure Analyzer
-
-Responsável por consolidar, classificar e agrupar as falhas.
-
-### Ownership Resolver
-
-Responsável por consultar o documento de ownership e identificar os responsáveis.
-
-### E2E Healer
-
-Reutilização do agente atual para diagnóstico, geração de patches e aplicação de correções.
-
-### Validation Engine
-
-Responsável por executar os testes novamente e validar as alterações propostas.
-
-### GitHub Integration
-
-Responsável pela criação de branches e Pull Requests.
-
-### Google Chat Integration
-
-Responsável pelas notificações direcionadas aos responsáveis.
-
-Avalie se essa divisão faz sentido considerando a arquitetura atual. Não crie abstrações desnecessárias se os componentes existentes já atenderem às necessidades.
-
-## 6. Integração com documento de ownership
-
-Será fornecido um documento que relaciona os testes e áreas de produto às respectivas squads e responsáveis.
-
-Analise sua estrutura.
-
-Determine:
-
-- Como o documento pode ser consumido.
-- Se deve ser convertido para JSON ou YAML.
-- Como identificar a responsabilidade de cada arquivo.
-- Como relacionar um teste à funcionalidade correspondente.
-- Como determinar o canal ou pessoa que deve receber a notificação.
-- Como tratar dados ausentes ou ambiguidades.
-
-A associação deve ser fundamentada no documento, sem inventar responsáveis.
-
-## 7. Criação de Pull Requests
-
-O objetivo final é entregar a correção para revisão humana.
-
-Investigue como o agente pode:
-
-1. Criar uma branch isolada.
-2. Aplicar o patch.
-3. Executar os testes afetados.
-4. Validar os testes relacionados.
-5. Registrar evidências.
-6. Criar uma Pull Request em Draft.
-7. Relacionar a PR ao responsável identificado.
-
-A PR deverá conter:
-
-- Nome da marca.
-- Arquivos afetados.
-- Testes relacionados.
-- Descrição da falha.
-- Causa raiz identificada.
-- Correção aplicada.
-- Resultado das validações.
-- Evidências.
-- Responsável sugerido.
-
-O agente não poderá:
-
-- Fazer merge.
-- Aprovar a própria PR.
-- Alterar diretamente a branch principal.
-- Modificar código de produto.
-- Alterar configurações críticas sem autorização.
-
-Investigue também como evitar conflitos entre múltiplas execuções locais.
-
-## 8. Notificações pelo Google Chat
-
-O sistema deve enviar uma mensagem direcionada à squad ou pessoa responsável.
-
-A mensagem deverá apresentar:
-
+- Identificador da execução.
+- Data e horário.
+- Branch.
+- Commit SHA.
 - Marca.
-- Funcionalidade.
-- Testes afetados.
-- Resumo do diagnóstico.
-- Causa raiz.
-- Solução proposta.
-- Resultado da validação.
-- Link da PR.
-
-Para falhas sem correção segura, deve existir uma notificação de investigação pendente, sem gerar uma PR artificial.
-
-Avalie as opções de integração com Google Chat e os requisitos de autenticação.
-
-## 9. API Keys, autenticação e custos
-
-Esta seção é prioritária.
-
-Queremos entender como executar o agente localmente sem criar dependências desnecessárias de novas API Keys.
-
-Investigue a arquitetura atual de autenticação do E2E Healer.
-
-Considere especialmente:
-
-- Gemini CLI.
-- Autenticação já disponível no ambiente local.
-- Uso de API Key.
-- Autenticação por conta.
-- Limitações de quotas.
-- Rate limits.
-- Consumo de tokens.
-- Limites de contexto.
-- Possibilidade de execução por lotes.
-- Reutilização de diagnósticos.
-- Estratégias de redução de chamadas ao modelo.
-
-Não assuma que a autenticação existente permite qualquer modalidade de utilização. Verifique as possibilidades reais e suas limitações.
-
-Queremos responder:
-
-1. É possível reutilizar a autenticação atual do Gemini CLI?
-2. É necessário criar uma API Key adicional?
-3. Quais são as limitações de cada modalidade?
-4. Como evitar consumo desnecessário?
-5. Como controlar o custo por marca?
-6. Como permitir interrupção e retomada de execuções?
-
-Investigue separadamente as credenciais necessárias para:
-
-- Acesso ao modelo de IA.
-- Acesso ao GitHub.
-- Criação de branches e PRs.
-- Envio de mensagens ao Google Chat.
-- Acesso aos ambientes de teste.
-
-Não exponha valores de credenciais ou secrets.
-
-Priorize o princípio do menor privilégio.
-
-## 10. Persistência e retomada de execução
-
-Uma execução pode ser longa.
-
-Investigue a necessidade de um mecanismo local de persistência para registrar:
-
-- ID da execução.
-- Marca.
+- Identificação da pipeline.
 - Testes executados.
-- Falhas identificadas.
-- Diagnósticos.
-- Patches gerados.
-- Validações.
-- Branches criadas.
-- Pull Requests.
-- Notificações enviadas.
-- Status atual.
+- Testes aprovados.
+- Testes reprovados.
+- Testes ignorados.
+- Testes que apresentaram retry.
+- Resultados individuais.
+- Duração.
+- Erros.
+- Stack traces.
+- Screenshots.
+- Traces.
+- HTML reports.
+- JSON reports.
+- Outros artefatos relevantes.
 
-Avalie se JSON, SQLite ou outra solução simples seria suficiente.
+Investigue como os dados são armazenados atualmente.
 
-Queremos evitar que uma interrupção obrigue o usuário a executar novamente todos os testes e repetir diagnósticos já concluídos.
+Priorize o reaproveitamento dos relatórios e artefatos existentes.
 
-Também precisamos evitar duplicidade de PRs e notificações.
+Não crie um mecanismo paralelo de armazenamento se os dados atuais forem suficientes.
 
-## 11. Segurança e confiabilidade
+Se os artefatos históricos estiverem expirados ou indisponíveis, identifique essa limitação e proponha uma alternativa.
+
+## 3.2. Estratégia de identificação dos testes
+
+Crie uma forma confiável de identificar o mesmo teste entre diferentes execuções.
 
 Considere:
 
-- Branches isoladas.
-- Working tree limpa antes de iniciar.
-- Proteção contra alterações locais do usuário.
-- Controle de permissões.
-- Validação antes da publicação.
-- Limites de tentativas de correção.
-- Controle de concorrência.
-- Timeout.
-- Logs.
-- Auditoria.
-- Proteção de credenciais.
-- Prevenção de execução recursiva.
-- Tratamento de erros do agente.
+- Caminho do arquivo.
+- Título do teste.
+- Test ID.
+- Projeto Playwright.
+- Marca.
+- Identificadores de suíte.
+- Outros identificadores disponíveis nos relatórios.
 
-O agente deve distinguir problemas de manutenção de testes de regressões reais do produto.
+Não utilize somente o título do teste, pois títulos podem se repetir ou ser modificados.
 
-Não queremos corrigir testes para esconder problemas existentes na aplicação.
+A identificação deve continuar funcionando mesmo quando houver alterações em metadados não relevantes.
 
-## 12. Comparação das arquiteturas
+# 4. Failure Pattern Analyzer
 
-Produza uma comparação entre:
+Crie um componente especializado em analisar o comportamento histórico dos testes.
 
-- Execução local via CLI.
-- Pipeline exclusiva de manutenção.
-- Execução automática disparada pela pipeline E2E.
+Ele deverá consolidar as informações das últimas 10 execuções e identificar padrões.
 
-Compare:
+## 4.1. Indicadores
 
-- Complexidade de implementação.
-- Dependência de infraestrutura.
-- Necessidade de credenciais.
-- Consumo de recursos.
-- Controle humano.
-- Facilidade de manutenção.
-- Escalabilidade.
-- Custos.
-- Confiabilidade.
-- Facilidade de adoção pelas squads.
+Para cada teste, calcule, quando os dados permitirem:
 
-Apresente uma recomendação fundamentada.
+- Total de execuções.
+- Total de falhas.
+- Total de aprovações.
+- Taxa de falha.
+- Quantidade de execuções consecutivas com falha.
+- Quantidade de retries.
+- Frequência de intermitência.
+- Data da última falha.
+- Data da última aprovação.
+- Recorrência de mensagens de erro.
+- Consistência das causas identificadas.
 
-## 13. Entregáveis obrigatórios
+Utilize dados reais. Não invente valores quando alguma informação estiver indisponível.
 
-Produza um relatório técnico contendo:
+## 4.2. Classificação das falhas
 
-### Parte 1: Diagnóstico do agente atual
+O agente deverá diferenciar pelo menos as seguintes categorias:
 
-Arquitetura, funcionalidades, dependências e possibilidades de reaproveitamento.
+**A. Suspected Test Maintenance**
 
-### Parte 2: Diagnóstico da execução E2E
+Problemas possivelmente relacionados à manutenção dos testes:
 
-Organização dos testes, identificação das marcas e possibilidades de execução local.
+- Seletores desatualizados.
+- Elementos removidos ou modificados.
+- Alterações estruturais na página.
+- Locators frágeis.
+- Assertions desatualizadas.
+- Problemas de sincronização.
+- Esperas inadequadas.
+- Mudanças na estrutura de componentes.
+- Problemas na implementação do próprio teste.
 
-### Parte 3: Arquitetura local via CLI
+**B. Flaky Test**
 
-Diagrama, componentes, fluxo e comandos recomendados.
+Testes que apresentam comportamento intermitente, alternando entre sucesso e falha.
 
-### Parte 4: Arquitetura via pipeline
+Investigar possíveis causas como:
 
-Diagrama, componentes e requisitos de infraestrutura.
+- Race conditions.
+- Problemas de sincronização.
+- Dependência de estado.
+- Concorrência.
+- Instabilidade de dados.
+- Problemas de sessão.
+- Dependência de outros testes.
 
-### Parte 5: Arquitetura compartilhada
+**C. Product Regression**
 
-Identifique o que pode ser reutilizado entre as duas modalidades.
+Falhas que apresentam evidências de comportamento incorreto da aplicação.
 
-### Parte 6: Autenticação e credenciais
+Não alterar o teste para mascarar regressões reais.
 
-Tabela detalhada de requisitos, permissões e disponibilidade atual.
+**D. Environment Failure**
 
-### Parte 7: Consumo de IA e otimização
+Falhas relacionadas a:
 
-Estratégias para controlar quotas, custos, contexto e volume de chamadas.
+- Indisponibilidade do ambiente.
+- Problemas de rede.
+- Serviços externos.
+- Infraestrutura.
+- Autenticação.
+- Instabilidade de dependências.
 
-### Parte 8: Integração com GitHub e Google Chat
+**E. Test Data Failure**
 
-Estratégia de criação de PRs e direcionamento de notificações.
+Problemas relacionados à massa de dados, inconsistência de informações ou pré-condições não atendidas.
 
-### Parte 9: Persistência e retomada
+**F. Unknown**
 
-Proposta de gerenciamento das execuções.
+Falhas cuja causa não pode ser determinada com segurança.
 
-### Parte 10: Comparativo e recomendação
+Essas ocorrências devem permanecer disponíveis para investigação humana.
 
-Indique qual modalidade deve ser priorizada e justifique tecnicamente.
+## 4.3. Priorização
 
-### Parte 11: Plano de implementação
+Crie um mecanismo de priorização considerando:
 
-Divida em etapas, com dependências, arquivos envolvidos, riscos e critérios de conclusão.
+- Taxa de falha.
+- Recorrência.
+- Antiguidade do problema.
+- Criticidade funcional, quando disponível.
+- Número de execuções afetadas.
+- Confiança do diagnóstico.
+- Potencial de correção.
 
-### Parte 12: Conclusão executiva
+Não utilize uma única taxa de falha como critério absoluto.
 
-Responda:
+Uma falha recente e isolada não deve necessariamente receber a mesma prioridade de um teste que está quebrado há várias semanas.
 
-- O que conseguimos implementar com a arquitetura atual?
-- O que precisa ser desenvolvido?
-- Quais novas credenciais são necessárias?
-- Qual seria o MVP mais simples?
-- Qual é a melhor forma de começar?
+# 5. Playwright Investigation
 
-## 14. Diretrizes de investigação
+Depois de identificar os testes candidatos, o agente deverá investigar os casos individualmente ou em grupos relacionados.
 
-- Não implemente alterações neste momento.
-- Não modifique arquivos.
-- Não crie branches ou Pull Requests.
-- Não envie notificações.
-- Não altere configurações das pipelines.
-- Inspecione o repositório antes de recomendar mudanças.
-- Reutilize a arquitetura existente sempre que possível.
-- Não presuma disponibilidade de ferramentas ou credenciais.
-- Diferencie fatos identificados de sugestões.
-- Cite os caminhos dos arquivos analisados.
-- Se não conseguir confirmar alguma informação, declare explicitamente a limitação.
+**Não executar toda a suíte E2E novamente.**
 
-**Resultado esperado:** um documento técnico que permita decidir como evoluir o E2E Healer para um sistema com execução local via terminal e possibilidade de execução por pipeline, mantendo o mesmo motor de diagnóstico e correção, com criação de PRs e notificações direcionadas, sem integração com Jira.
+O Playwright MCP deverá ser utilizado somente nos testes identificados como candidatos à investigação.
+
+## 5.1. Processo de investigação
+
+Para cada candidato:
+
+1. Localizar o arquivo de teste.
+2. Identificar o cenário correspondente.
+3. Recuperar os dados históricos.
+4. Inspecionar o código atual.
+5. Investigar a falha utilizando Playwright MCP.
+6. Executar o teste individualmente.
+7. Coletar evidências.
+8. Comparar o comportamento atual com o histórico.
+9. Identificar a causa raiz provável.
+10. Determinar se existe uma correção segura.
+
+Quando necessário, executar novamente o caso para diferenciar falha consistente de intermitência.
+
+Não utilizar retries ilimitados.
+
+A quantidade de tentativas deverá ser configurável.
+
+## 5.2. Regras de investigação
+
+O agente deve preservar a intenção original do teste.
+
+Não deve:
+
+- Remover assertions para fazer o teste passar.
+- Reduzir validações funcionais.
+- Ignorar erros.
+- Introduzir esperas arbitrárias sem justificativa.
+- Desabilitar testes como solução automática.
+- Modificar comportamento da aplicação.
+- Alterar configurações da pipeline para esconder falhas.
+
+Qualquer alteração deve ser tecnicamente justificada.
+
+# 6. Ownership Resolver
+
+Existe um documento de ownership que relaciona arquivos, funcionalidades e áreas de produto às respectivas pessoas ou squads responsáveis.
+
+Esse documento será disponibilizado no repositório.
+
+Ele deverá ser utilizado como fonte oficial para identificar os responsáveis pelas correções.
+
+Investigue sua estrutura e implemente um componente capaz de:
+
+- Localizar o arquivo de ownership.
+- Interpretar suas associações.
+- Relacionar os arquivos de teste às respectivas squads.
+- Identificar os responsáveis.
+- Identificar os canais de comunicação, quando disponíveis.
+- Determinar os revisores adequados para cada PR.
+
+Não inventar responsáveis.
+
+Se um arquivo não estiver mapeado, encaminhar para uma fila de triagem geral.
+
+Se houver mais de um responsável ou ambiguidade, apresentar a situação sem fazer atribuições incorretas.
+
+Avalie se o formato atual pode ser utilizado diretamente ou se precisa ser convertido para JSON ou YAML.
+
+Evite manter duas fontes de ownership divergentes.
+
+# 7. Intelligent Healing
+
+Quando o diagnóstico identificar um problema de manutenção com evidências suficientes, o agente deverá preparar uma correção.
+
+## 7.1. Geração da correção
+
+O agente deverá:
+
+- Inspecionar o código original.
+- Identificar a menor alteração necessária.
+- Preservar a arquitetura existente.
+- Preservar os padrões do projeto.
+- Reutilizar os helpers e componentes disponíveis.
+- Respeitar a estrutura Page Object Model, quando utilizada.
+- Evitar refatorações desnecessárias.
+
+O objetivo é corrigir o problema identificado, não reescrever o teste.
+
+## 7.2. Validação
+
+Antes de publicar qualquer alteração:
+
+1. Aplicar a correção em uma branch isolada.
+2. Executar o teste originalmente afetado.
+3. Executar testes relacionados quando necessário.
+4. Verificar se não houve regressões.
+5. Executar as validações estáticas disponíveis.
+6. Registrar os resultados.
+
+Se a correção não puder ser validada, não abrir uma PR como solução concluída.
+
+O agente poderá registrar uma sugestão de correção para revisão humana, mas deverá deixar claro que ela não foi validada.
+
+# 8. GitHub Pull Request Automation
+
+Após a validação bem-sucedida, criar uma Pull Request em Draft.
+
+A branch deverá seguir uma nomenclatura padronizada, por exemplo:
+
+`automation/flake-detector/<test-id>`
+
+A PR deverá conter:
+
+## Identificação
+- Marca.
+- Arquivo afetado.
+- Nome do teste.
+- Squad responsável.
+- Responsável sugerido.
+
+## Histórico da falha
+- Número de execuções analisadas.
+- Quantidade de falhas.
+- Taxa de falha.
+- Histórico resumido.
+- Evidências relevantes.
+
+## Diagnóstico
+- Categoria da falha.
+- Causa raiz identificada.
+- Explicação técnica.
+
+## Correção
+- Alterações realizadas.
+- Justificativa.
+- Arquivos modificados.
+
+## Validação
+- Teste original.
+- Testes relacionados.
+- Resultado das execuções.
+- Evidências.
+
+## Revisão
+- Responsável ou reviewer.
+- Links relevantes.
+
+A PR deverá ser criada em Draft, solicitando revisão humana conforme as permissões e os mecanismos disponíveis no GitHub.
+
+O agente não poderá fazer merge, aprovar a própria PR ou modificar diretamente branches protegidas.
+
+Avalie também se é melhor criar uma PR por teste, por causa raiz ou por responsável.
+
+Priorize uma estratégia que evite excesso de PRs e preserve a clareza das alterações.
+
+# 9. Google Chat Integration
+
+Após a criação de uma PR, o agente deverá notificar os responsáveis identificados no documento de ownership.
+
+A mensagem deve ser direcionada à pessoa ou espaço adequado.
+
+Modelo ilustrativo:
+
+**Flake Test Detector | Correção disponível**
+
+Marca: Brastemp
+
+Teste: Checkout - Finalização de pedido
+
+Arquivo: `tests/checkout/checkout.spec.ts`
+
+Histórico: 7 falhas nas últimas 10 execuções.
+
+Diagnóstico: seletor desatualizado após alteração estrutural do componente.
+
+Correção: locator atualizado e validado.
+
+Validação:
+- Teste original: aprovado.
+- Testes relacionados: aprovados.
+
+Responsável: Squad Checkout.
+
+Pull Request: link da PR.
+
+A mensagem deve ser objetiva e conter informações suficientes para que a pessoa entenda o motivo da notificação.
+
+Para ocorrências sem PR, enviar notificações somente quando houver uma necessidade real de intervenção humana.
+
+Evitar mensagens duplicadas em execuções sucessivas.
+
+# 10. Orquestração e execução do agente
+
+Investigue qual deve ser o melhor mecanismo para iniciar o Flake Test Detector.
+
+Considere:
+
+- Execução manual por comando.
+- Execução programada.
+- Pipeline exclusiva para o agente.
+- Execução independente utilizando a API do GitHub Actions.
+
+A decisão deverá considerar o fato de que as pipelines de Test Change Trend já existem e continuam executando normalmente.
+
+Não criar uma nova execução completa de testes apenas para descobrir falhas que já estão disponíveis no histórico.
+
+O agente deverá conseguir processar diferentes marcas e repositórios, respeitando suas configurações.
+
+Investigue também a possibilidade de processar os resultados de maneira incremental.
+
+# 11. Autenticação e infraestrutura
+
+Investigue quais recursos e permissões serão necessários.
+
+Considere:
+
+### GitHub
+- Leitura de workflows e execuções.
+- Acesso aos relatórios e artefatos.
+- Leitura dos arquivos do repositório.
+- Criação de branches.
+- Publicação de commits.
+- Criação de Pull Requests.
+- Solicitação de reviewers.
+
+### IA
+- Autenticação do modelo.
+- Possibilidade de reaproveitamento do Gemini CLI.
+- Limites de requisições.
+- Consumo de tokens.
+- Controle de contexto.
+- Estratégia de execução em lotes.
+
+### Playwright
+- Playwright MCP.
+- Browser.
+- Configurações de ambiente.
+- Variáveis necessárias.
+- Acesso aos ambientes de teste.
+
+### Google Chat
+- Autenticação.
+- Webhook ou integração disponível.
+- Permissão para enviar mensagens.
+- Direcionamento aos responsáveis.
+
+Para cada dependência, identificar se já existe no ambiente e qual configuração adicional seria necessária.
+
+Não solicitar nem expor valores de secrets.
+
+Utilizar sempre o princípio do menor privilégio.
+
+# 12. Persistência e deduplicação
+
+O agente precisa manter controle sobre o que já investigou e corrigiu.
+
+Investigue a necessidade de persistir:
+
+- Test ID.
+- Arquivo.
+- Marca.
+- Histórico analisado.
+- Fingerprint da falha.
+- Diagnóstico.
+- Correção proposta.
+- Status da validação.
+- Branch.
+- Pull Request.
+- Responsável.
+- Notificação enviada.
+
+Evitar:
+
+- Repetir diagnósticos desnecessariamente.
+- Abrir múltiplas PRs para o mesmo problema.
+- Notificar repetidamente a mesma pessoa.
+- Reinvestigar falhas já resolvidas sem evidência de recorrência.
+
+Se uma falha voltar depois de uma correção, o agente deverá reconhecer o histórico anterior e avaliar se é uma nova ocorrência ou se a correção anterior não resolveu o problema.
+
+Avalie uma solução de persistência proporcional à complexidade do projeto.
+
+# 13. Segurança e confiabilidade
+
+Estabeleça regras claras:
+
+- Nunca fazer merge automaticamente.
+- Nunca aprovar a própria PR.
+- Nunca alterar código de aplicação.
+- Nunca modificar a branch principal.
+- Nunca mascarar regressões reais.
+- Nunca remover assertions para obter aprovação.
+- Nunca publicar uma correção sem validação.
+- Não processar novamente uma PR já aberta sem necessidade.
+- Não criar ciclos recursivos de execução.
+- Não expor credenciais em logs ou relatórios.
+- Não executar testes fora do escopo identificado sem justificativa.
+
+O agente deve ser conservador quando não houver evidências suficientes.
+
+É preferível não gerar uma PR do que publicar uma correção incorreta.
+
+# 14. Indicadores de resultado
+
+Implemente uma forma de acompanhar a efetividade do agente.
+
+Considere:
+
+- Testes identificados com falhas recorrentes.
+- Testes classificados como flaky.
+- Testes classificados como problemas de manutenção.
+- Diagnósticos concluídos.
+- Correções propostas.
+- PRs criadas.
+- PRs aprovadas.
+- Correções rejeitadas.
+- Taxa de sucesso das correções.
+- Tempo médio entre identificação e PR.
+- Recorrência após correção.
+- Distribuição por marca e squad.
+
+Os indicadores deverão diferenciar falhas identificadas, correções propostas e correções efetivamente aprovadas.
+
+# 15. Plano de implementação
+
+Desenvolva a solução de forma incremental.
+
+Sugestão de etapas:
+
+**Fase 1 - GitHub Historical Collector**
+
+Acesso às últimas 10 execuções válidas das pipelines existentes e consolidação dos resultados.
+
+**Fase 2 - Failure Pattern Analyzer**
+
+Identificação dos testes com falhas recorrentes, intermitência e possíveis problemas de manutenção.
+
+**Fase 3 - Playwright Investigation**
+
+Execução somente dos testes candidatos e investigação com Playwright MCP.
+
+**Fase 4 - Ownership Resolver**
+
+Identificação dos responsáveis a partir do documento disponível.
+
+**Fase 5 - Intelligent Healing**
+
+Geração e validação das correções.
+
+**Fase 6 - GitHub PR Automation**
+
+Criação das branches e Pull Requests em Draft.
+
+**Fase 7 - Google Chat Integration**
+
+Notificações direcionadas aos responsáveis.
+
+**Fase 8 - Observabilidade**
+
+Indicadores, histórico de investigações, deduplicação e acompanhamento dos resultados.
+
+Ajuste essa ordem caso a análise técnica identifique dependências diferentes.
+
+# 16. Entregáveis
+
+Antes de iniciar a implementação, apresente:
+
+1. Diagnóstico da estrutura atual dos repositórios.
+2. Identificação das pipelines de Test Change Trend.
+3. Identificação dos relatórios e artefatos disponíveis.
+4. Estratégia de coleta das últimas 10 execuções.
+5. Arquitetura proposta do Flake Test Detector.
+6. Diagrama do fluxo completo.
+7. Estratégia de classificação de falhas.
+8. Estratégia de integração com Playwright MCP.
+9. Estratégia de ownership.
+10. Requisitos de autenticação e permissões.
+11. Estratégia de criação de PRs.
+12. Estratégia de notificação pelo Google Chat.
+13. Plano de implementação incremental.
+14. Riscos técnicos e limitações.
+
+Após apresentar o diagnóstico e a arquitetura, prepare a implementação do MVP em uma branch isolada, sem alterar o comportamento das pipelines existentes.
+
+Não faça publicações, alterações de permissões, envio de notificações ou operações irreversíveis sem autorização.
+
+# 17. Diretrizes finais
+
+- Desenvolver o Flake Test Detector como um agente novo.
+- Não assumir que existe um Healer anterior disponível nesta branch.
+- Utilizar o documento de ownership existente.
+- Aproveitar os dados históricos já produzidos pelas pipelines.
+- Não criar uma nova suíte de execução completa.
+- Executar localmente somente os testes candidatos identificados.
+- Utilizar Playwright MCP na investigação.
+- Não integrar Jira.
+- Preservar integralmente a suíte Smoke.
+- Não modificar as pipelines de Test Change Trend.
+- Reutilizar ferramentas e integrações existentes quando tecnicamente viável.
+- Fundamentar conclusões em arquivos, configurações e dados efetivamente encontrados.
+- Diferenciar fatos confirmados de hipóteses.
+- Não inventar permissões, credenciais ou funcionalidades.
+
+**Resultado final esperado:**
+
+Um agente chamado Flake Test Detector capaz de consumir o histórico de execuções das pipelines existentes, identificar testes que precisam de manutenção, investigar suas falhas com Playwright MCP, consultar o documento de ownership, gerar correções validadas, abrir Pull Requests para revisão humana e notificar os responsáveis pelo Google Chat.
+
+A solução deve funcionar como uma camada inteligente de manutenção sobre a infraestrutura de testes já existente, sem exigir que toda a suíte seja executada novamente para encontrar problemas.
